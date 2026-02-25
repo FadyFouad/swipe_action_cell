@@ -1,0 +1,21 @@
+name: swipe_action_cell
+description: A highly configurable swipe interaction widget with asymmetric left/right actions — progressive increments and intentional committed actions.
+version: 0.0.1
+homepage: https://github.com/YOUR_USERNAME/swipe_action_cell
+repository: https://github.com/YOUR_USERNAME/swipe_action_cell
+issue_tracker: https://github.com/YOUR_USERNAME/swipe_action_cell/issues
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+  flutter: ">=3.22.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
