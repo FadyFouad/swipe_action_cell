@@ -28,7 +28,8 @@ void main() {
 
     test('copyWith updates specified fields', () {
       const c1 = SwipeAnimationConfig();
-      final c2 = c1.copyWith(activationThreshold: 0.6, maxTranslationLeft: 100.0);
+      final c2 =
+          c1.copyWith(activationThreshold: 0.6, maxTranslationLeft: 100.0);
 
       expect(c2.activationThreshold, equals(0.6));
       expect(c2.maxTranslationLeft, equals(100.0));

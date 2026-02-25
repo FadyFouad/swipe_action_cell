@@ -19,5 +19,8 @@ export 'src/core/typedefs.dart';
 // Gesture
 export 'src/gesture/swipe_gesture_config.dart';
 
+// Visual layer (002-swipe-background)
+export 'src/visual/swipe_action_background.dart';
+
 // Main widget
 export 'src/widget/swipe_action_cell.dart';
