@@ -6,11 +6,18 @@
 /// ```
 library;
 
+// Configuration
+export 'src/animation/spring_config.dart';
+export 'src/animation/swipe_animation_config.dart';
+
 // Core models
 export 'src/core/swipe_direction.dart';
 export 'src/core/swipe_progress.dart';
 export 'src/core/swipe_state.dart';
 export 'src/core/typedefs.dart';
+
+// Gesture
+export 'src/gesture/swipe_gesture_config.dart';
 
 // Main widget
 export 'src/widget/swipe_action_cell.dart';

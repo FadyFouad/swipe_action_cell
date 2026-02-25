@@ -1,9 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'swipe_direction.dart';
 
 /// Contains progress information about the current swipe gesture.
 ///
 /// Provided to background builders and visual feedback components so they can
 /// react to drag state without coupling to internal widget implementation.
+@immutable
 class SwipeProgress {
   /// Creates a [SwipeProgress] with the given values.
   const SwipeProgress({
@@ -34,4 +36,37 @@ class SwipeProgress {
     isActivated: false,
     rawOffset: 0.0,
   );
+
+  /// Returns a copy of this progress with the given fields replaced.
+  SwipeProgress copyWith({
+    SwipeDirection? direction,
+    double? ratio,
+    bool? isActivated,
+    double? rawOffset,
+  }) {
+    return SwipeProgress(
+      direction: direction ?? this.direction,
+      ratio: ratio ?? this.ratio,
+      isActivated: isActivated ?? this.isActivated,
+      rawOffset: rawOffset ?? this.rawOffset,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is SwipeProgress &&
+        other.direction == direction &&
+        other.ratio == ratio &&
+        other.isActivated == isActivated &&
+        other.rawOffset == rawOffset;
+  }
+
+  @override
+  int get hashCode => Object.hash(direction, ratio, isActivated, rawOffset);
+
+  @override
+  String toString() {
+    return 'SwipeProgress(direction: $direction, ratio: $ratio, isActivated: $isActivated, rawOffset: $rawOffset)';
+  }
 }

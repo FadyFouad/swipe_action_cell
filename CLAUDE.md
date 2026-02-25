@@ -116,3 +116,9 @@ Phase 4 (Polish):   F14 → F15 → F16 → F17
 - **Tests required:** Every public API surface needs widget/unit tests. Run `flutter test` before committing.
 - **No external runtime deps:** The package depends only on Flutter SDK. Dev dependencies are fine.
 - **Dartdoc everything:** All public members need `///` documentation comments.
+
+## Active Technologies
+- Dart >=3.4.0 + Flutter SDK only (zero external runtime deps — Constitution IV) (001-gesture-animation)
+
+## Recent Changes
+- 001-gesture-animation: Added Dart >=3.4.0 + Flutter SDK only (zero external runtime deps — Constitution IV)

@@ -1,48 +1,282 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/physics.dart';
 import 'package:flutter/widgets.dart';
+import '../animation/swipe_animation_config.dart';
+import '../core/swipe_direction.dart';
+import '../core/swipe_progress.dart';
+import '../core/swipe_state.dart';
+import '../gesture/swipe_gesture_config.dart';
 
-/// A widget that wraps a child and will provide swipe interaction capabilities.
-///
-/// [SwipeActionCell] uses asymmetric swipe semantics:
-/// - **Right swipe (forward):** Progressive/incremental action (e.g., increment
-///   a counter or increase a progress value).
-/// - **Left swipe (backward):** Intentional committed action (e.g., delete,
-///   archive, or reveal action buttons).
-///
-/// Example usage:
-/// ```dart
-/// SwipeActionCell(
-///   child: ListTile(title: Text('Swipeable item')),
-/// )
-/// ```
-///
-/// > Note: Swipe behaviour is not yet implemented. This is a widget skeleton.
+/// A widget that wraps any child and provides spring-based horizontal swipe interaction.
 class SwipeActionCell extends StatefulWidget {
   /// Creates a [SwipeActionCell].
-  ///
-  /// The [child] argument must not be null.
   const SwipeActionCell({
     super.key,
     required this.child,
+    this.gestureConfig = const SwipeGestureConfig(),
+    this.animationConfig = const SwipeAnimationConfig(),
+    this.onStateChanged,
+    this.onProgressChanged,
     this.enabled = true,
   });
 
   /// The widget displayed inside the swipe cell.
   final Widget child;
 
-  /// Whether swipe interactions are enabled.
-  ///
-  /// When `false`, the cell renders [child] without any swipe capability.
-  /// Defaults to `true`.
+  /// Configuration for gesture recognition behavior.
+  final SwipeGestureConfig gestureConfig;
+
+  /// Configuration for animation physics.
+  final SwipeAnimationConfig animationConfig;
+
+  /// Called whenever the swipe state machine transitions to a new state.
+  final ValueChanged<SwipeState>? onStateChanged;
+
+  /// Called on every frame during a drag with the current swipe progress.
+  final ValueChanged<SwipeProgress>? onProgressChanged;
+
+  /// Whether swipe interactions are active.
   final bool enabled;
 
   @override
   State<SwipeActionCell> createState() => _SwipeActionCellState();
 }
 
-class _SwipeActionCellState extends State<SwipeActionCell> {
+class _SwipeActionCellState extends State<SwipeActionCell>
+    with TickerProviderStateMixin {
+  late final AnimationController _controller;
+  SwipeState _state = SwipeState.idle;
+  SwipeDirection _lockedDirection = SwipeDirection.none;
+  double _accumulatedDx = 0.0;
+
+  /// Read-only observable of the current horizontal pixel offset.
+  /// Exposed for widget testing via a GlobalKey.
+  ValueListenable<double> get swipeOffsetListenable => _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      lowerBound: double.negativeInfinity,
+      upperBound: double.infinity,
+      value: 0.0,
+    );
+    _controller.addStatusListener(_handleAnimationStatusChange);
+  }
+
+  @override
+  void dispose() {
+    _controller.removeStatusListener(_handleAnimationStatusChange);
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _handleAnimationStatusChange(AnimationStatus status) {
+    if (status == AnimationStatus.completed) {
+      if (_state == SwipeState.animatingToClose) {
+        _lockedDirection = SwipeDirection.none;
+        _updateState(SwipeState.idle);
+      } else if (_state == SwipeState.animatingToOpen) {
+        _updateState(SwipeState.revealed);
+      }
+    }
+  }
+
+  void _updateState(SwipeState newState) {
+    if (_state == newState) return;
+    setState(() {
+      _state = newState;
+    });
+    widget.onStateChanged?.call(newState);
+  }
+
+  double _applyResistance(
+      double rawOffset, double maxTranslation, double factor) {
+    if (maxTranslation <= 0) return 0.0;
+    final sign = rawOffset.sign;
+    final abs = rawOffset.abs();
+
+    if (abs <= maxTranslation) {
+      return rawOffset;
+    }
+
+    if (factor <= 0.0) {
+      return sign * maxTranslation;
+    }
+
+    final overflow = abs - maxTranslation;
+    // iOS-derived logarithmic formula:
+    // resistedOverflow = (1 - 1 / (overflow * factor / maxTranslation + 1)) * maxTranslation
+    final resistedOverflow =
+        (1.0 - 1.0 / (overflow * factor / maxTranslation + 1.0)) *
+            maxTranslation;
+
+    return sign * (maxTranslation + resistedOverflow);
+  }
+
+  void _handleDragStart(DragStartDetails details) {
+    _controller.stop();
+    _accumulatedDx = 0.0;
+    // Always reset direction lock on new drag to allow re-locking 
+    // (US5 requirement for starting drag from revealed state)
+    _lockedDirection = SwipeDirection.none;
+    _updateState(SwipeState.dragging);
+  }
+
+  void _handleDragUpdate(DragUpdateDetails details, double widgetWidth) {
+    final dx = details.delta.dx;
+
+    if (_lockedDirection == SwipeDirection.none) {
+      _accumulatedDx += dx;
+      
+      // If we already have an offset (interrupted animation or starting from revealed),
+      // we might want to allow moving immediately if the drag is in the direction 
+      // that reduces the offset. But for simplicity and matching spec:
+      
+      if (_accumulatedDx.abs() < widget.gestureConfig.deadZone && _controller.value == 0.0) {
+        return;
+      }
+      
+      // If we have an existing offset, we skip dead zone for intuitive catch
+      if (_controller.value != 0.0 || _accumulatedDx.abs() >= widget.gestureConfig.deadZone) {
+         _lockedDirection = (_controller.value + _accumulatedDx) > 0 
+            ? SwipeDirection.right 
+            : SwipeDirection.left;
+      } else {
+        return;
+      }
+    }
+
+    if (!widget.gestureConfig.enabledDirections.contains(_lockedDirection)) {
+      return;
+    }
+
+    final maxT = _lockedDirection == SwipeDirection.right
+        ? (widget.animationConfig.maxTranslationRight ?? widgetWidth * 0.6)
+        : (widget.animationConfig.maxTranslationLeft ?? widgetWidth * 0.6);
+
+    if (maxT <= 0) return;
+
+    final rawNewOffset = _controller.value + dx;
+    _controller.value = _applyResistance(
+      rawNewOffset,
+      maxT,
+      widget.animationConfig.resistanceFactor,
+    );
+  }
+
+  void _handleDragEnd(DragEndDetails details, double widgetWidth) {
+    if (_lockedDirection == SwipeDirection.none) {
+      _updateState(SwipeState.idle);
+      return;
+    }
+
+    final maxT = _lockedDirection == SwipeDirection.right
+        ? (widget.animationConfig.maxTranslationRight ?? widgetWidth * 0.6)
+        : (widget.animationConfig.maxTranslationLeft ?? widgetWidth * 0.6);
+
+    if (maxT <= 0) {
+      _snapBack(0.0, 0.0);
+      return;
+    }
+
+    final velocity = details.primaryVelocity ?? 0.0;
+    final ratio = _controller.value.abs() / maxT;
+
+    final isFling = velocity.abs() >= widget.gestureConfig.velocityThreshold &&
+        (_lockedDirection == SwipeDirection.right ? velocity > 0 : velocity < 0);
+
+    final shouldComplete = isFling || ratio >= widget.animationConfig.activationThreshold;
+
+    if (shouldComplete) {
+      _updateState(SwipeState.animatingToOpen);
+      _animateToOpen(
+        _controller.value,
+        _lockedDirection == SwipeDirection.right ? maxT : -maxT,
+        velocity,
+      );
+    } else {
+      _updateState(SwipeState.animatingToClose);
+      _snapBack(_controller.value, velocity);
+    }
+  }
+
+  void _snapBack(double fromOffset, double velocity) {
+    final spring = widget.animationConfig.snapBackSpring;
+    final simulation = SpringSimulation(
+      SpringDescription(
+        mass: spring.mass,
+        stiffness: spring.stiffness,
+        damping: spring.damping,
+      ),
+      fromOffset,
+      0.0,
+      velocity,
+    );
+    _controller.animateWith(simulation);
+  }
+
+  void _animateToOpen(double fromOffset, double toOffset, double velocity) {
+    final spring = widget.animationConfig.completionSpring;
+    final simulation = SpringSimulation(
+      SpringDescription(
+        mass: spring.mass,
+        stiffness: spring.stiffness,
+        damping: spring.damping,
+      ),
+      fromOffset,
+      toOffset,
+      velocity,
+    );
+    _controller.animateWith(simulation);
+  }
+
   @override
   Widget build(BuildContext context) {
-    // TODO(F1): Add gesture detection and swipe behaviour.
-    return widget.child;
+    if (!widget.enabled) {
+      return widget.child;
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        return GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onHorizontalDragStart: _handleDragStart,
+          onHorizontalDragUpdate: (details) =>
+              _handleDragUpdate(details, width),
+          onHorizontalDragEnd: (details) => _handleDragEnd(details, width),
+          child: AnimatedBuilder(
+            animation: _controller,
+            builder: (context, child) {
+              final offset = _controller.value;
+              
+              if (widget.onProgressChanged != null) {
+                final maxT = _lockedDirection == SwipeDirection.right
+                    ? (widget.animationConfig.maxTranslationRight ?? width * 0.6)
+                    : (widget.animationConfig.maxTranslationLeft ?? width * 0.6);
+                
+                final ratio = maxT > 0 ? (offset.abs() / maxT).clamp(0.0, 1.0) : 0.0;
+                final progress = SwipeProgress(
+                  direction: _lockedDirection,
+                  ratio: ratio,
+                  isActivated: ratio >= widget.animationConfig.activationThreshold,
+                  rawOffset: offset,
+                );
+                
+                widget.onProgressChanged!(progress);
+              }
+
+              return Transform.translate(
+                offset: Offset(offset, 0),
+                child: child,
+              );
+            },
+            child: widget.child,
+          ),
+        );
+      },
+    );
   }
 }
