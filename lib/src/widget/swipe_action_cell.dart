@@ -1,7 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/physics.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
+import '../actions/progressive/progress_indicator_config.dart';
+import '../actions/progressive/progressive_swipe_config.dart';
+import '../actions/progressive/progressive_swipe_indicator.dart';
+import '../actions/progressive/progressive_value_logic.dart';
 import '../animation/swipe_animation_config.dart';
 import '../core/swipe_direction.dart';
 import '../core/swipe_progress.dart';
@@ -24,6 +29,7 @@ class SwipeActionCell extends StatefulWidget {
     this.rightBackground,
     this.clipBehavior = Clip.hardEdge,
     this.borderRadius,
+    this.rightSwipe,
   });
 
   /// The widget displayed inside the swipe cell.
@@ -56,6 +62,9 @@ class SwipeActionCell extends StatefulWidget {
   /// Optional rounded corners for clipping.
   final BorderRadius? borderRadius;
 
+  /// Configuration for right-swipe progressive (incremental) action behavior.
+  final ProgressiveSwipeConfig? rightSwipe;
+
   @override
   State<SwipeActionCell> createState() => _SwipeActionCellState();
 }
@@ -67,9 +76,15 @@ class _SwipeActionCellState extends State<SwipeActionCell>
   SwipeDirection _lockedDirection = SwipeDirection.none;
   double _accumulatedDx = 0.0;
 
+  ValueNotifier<double>? _progressValueNotifier;
+  bool _isPostIncrementSnapBack = false;
+  bool _swipeStartedFired = false;
+  bool _hapticThresholdFired = false;
+
   /// Read-only observable of the current horizontal pixel offset.
   /// Exposed for widget testing via a GlobalKey.
   ValueListenable<double> get swipeOffsetListenable => _controller;
+  ValueNotifier<double>? get progressValueNotifier => _progressValueNotifier;
 
   @override
   void initState() {
@@ -81,24 +96,89 @@ class _SwipeActionCellState extends State<SwipeActionCell>
       value: 0.0,
     );
     _controller.addStatusListener(_handleAnimationStatusChange);
+    _initProgressiveNotifier();
+  }
+
+  void _initProgressiveNotifier() {
+    if (widget.rightSwipe != null) {
+      final config = widget.rightSwipe!;
+      final initialVal = config.value ??
+          config.initialValue.clamp(config.minValue, config.maxValue);
+      _progressValueNotifier = ValueNotifier(initialVal);
+    }
+  }
+
+  @override
+  void didUpdateWidget(SwipeActionCell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final newConfig = widget.rightSwipe;
+    final oldConfig = oldWidget.rightSwipe;
+
+    if (newConfig != null) {
+      if (_progressValueNotifier == null) {
+        _initProgressiveNotifier();
+      } else {
+        if (newConfig.value != null &&
+            newConfig.value != _progressValueNotifier!.value) {
+          _progressValueNotifier!.value = newConfig.value!;
+        }
+      }
+    } else if (oldConfig != null) {
+      _progressValueNotifier?.dispose();
+      _progressValueNotifier = null;
+    }
   }
 
   @override
   void dispose() {
     _controller.removeStatusListener(_handleAnimationStatusChange);
     _controller.dispose();
+    _progressValueNotifier?.dispose();
     super.dispose();
   }
 
   void _handleAnimationStatusChange(AnimationStatus status) {
     if (status == AnimationStatus.completed) {
       if (_state == SwipeState.animatingToClose) {
+        final wasProgressiveRight = _lockedDirection == SwipeDirection.right &&
+            widget.rightSwipe != null;
         _lockedDirection = SwipeDirection.none;
         _updateState(SwipeState.idle);
+        if (wasProgressiveRight && !_isPostIncrementSnapBack) {
+          widget.rightSwipe!.onSwipeCancelled?.call();
+        }
+        _isPostIncrementSnapBack = false;
       } else if (_state == SwipeState.animatingToOpen) {
-        _updateState(SwipeState.revealed);
+        if (_lockedDirection == SwipeDirection.right &&
+            widget.rightSwipe != null) {
+          _applyProgressiveIncrement();
+          _isPostIncrementSnapBack = true;
+          _updateState(SwipeState.animatingToClose);
+          _snapBack(_controller.value, 0.0);
+        } else {
+          _updateState(SwipeState.revealed);
+        }
       }
     }
+  }
+
+  void _applyProgressiveIncrement() {
+    final config = widget.rightSwipe!;
+    final current = _progressValueNotifier!.value;
+    final result =
+        computeNextProgressiveValue(current: current, config: config);
+
+    final isControlled = config.value != null;
+
+    if (result.nextValue != current) {
+      if (!isControlled) {
+        _progressValueNotifier!.value = result.nextValue;
+      }
+      config.onProgressChanged?.call(result.nextValue, current);
+    }
+    if (result.hitMax) config.onMaxReached?.call();
+    if (config.enableHaptic) HapticFeedback.mediumImpact();
+    config.onSwipeCompleted?.call(result.nextValue);
   }
 
   void _updateState(SwipeState newState) {
@@ -124,8 +204,6 @@ class _SwipeActionCellState extends State<SwipeActionCell>
     }
 
     final overflow = abs - maxTranslation;
-    // iOS-derived logarithmic formula:
-    // resistedOverflow = (1 - 1 / (overflow * factor / maxTranslation + 1)) * maxTranslation
     final resistedOverflow =
         (1.0 - 1.0 / (overflow * factor / maxTranslation + 1.0)) *
             maxTranslation;
@@ -136,10 +214,11 @@ class _SwipeActionCellState extends State<SwipeActionCell>
   void _handleDragStart(DragStartDetails details) {
     _controller.stop();
     _accumulatedDx = 0.0;
-    // Always reset direction lock on new drag to allow re-locking
-    // (US5 requirement for starting drag from revealed state)
     _lockedDirection = SwipeDirection.none;
     _updateState(SwipeState.dragging);
+    _isPostIncrementSnapBack = false;
+    _swipeStartedFired = false;
+    _hapticThresholdFired = false;
   }
 
   void _handleDragUpdate(DragUpdateDetails details, double widgetWidth) {
@@ -148,21 +227,23 @@ class _SwipeActionCellState extends State<SwipeActionCell>
     if (_lockedDirection == SwipeDirection.none) {
       _accumulatedDx += dx;
 
-      // If we already have an offset (interrupted animation or starting from revealed),
-      // we might want to allow moving immediately if the drag is in the direction
-      // that reduces the offset. But for simplicity and matching spec:
-
       if (_accumulatedDx.abs() < widget.gestureConfig.deadZone &&
           _controller.value == 0.0) {
         return;
       }
 
-      // If we have an existing offset, we skip dead zone for intuitive catch
       if (_controller.value != 0.0 ||
           _accumulatedDx.abs() >= widget.gestureConfig.deadZone) {
         _lockedDirection = (_controller.value + _accumulatedDx) > 0
             ? SwipeDirection.right
             : SwipeDirection.left;
+
+        if (_lockedDirection == SwipeDirection.right &&
+            widget.rightSwipe != null &&
+            !_swipeStartedFired) {
+          widget.rightSwipe!.onSwipeStarted?.call();
+          _swipeStartedFired = true;
+        }
       } else {
         return;
       }
@@ -266,6 +347,38 @@ class _SwipeActionCellState extends State<SwipeActionCell>
     return builder(context, progress);
   }
 
+  Widget _buildProgressIndicator() {
+    final config = widget.rightSwipe!;
+    final indicatorConfig =
+        config.progressIndicatorConfig ?? const ProgressIndicatorConfig();
+
+    assert(
+      !config.maxValue.isInfinite,
+      'showProgressIndicator requires a finite maxValue',
+    );
+
+    if (config.maxValue.isInfinite) return const SizedBox.shrink();
+
+    return Positioned(
+      top: 0,
+      bottom: 0,
+      left: 0,
+      width: indicatorConfig.width,
+      child: RepaintBoundary(
+        child: ValueListenableBuilder<double>(
+          valueListenable: _progressValueNotifier!,
+          builder: (context, value, _) {
+            final fillRatio = (value / config.maxValue).clamp(0.0, 1.0);
+            return ProgressiveSwipeIndicator(
+              fillRatio: fillRatio,
+              config: indicatorConfig,
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   Widget _wrapWithClip(Widget child) {
     if (widget.borderRadius != null) {
       return ClipRRect(
@@ -324,6 +437,14 @@ class _SwipeActionCellState extends State<SwipeActionCell>
                   rawOffset: offset,
                 );
 
+                if (widget.rightSwipe?.enableHaptic == true &&
+                    _lockedDirection == SwipeDirection.right &&
+                    progress.isActivated &&
+                    !_hapticThresholdFired) {
+                  HapticFeedback.lightImpact();
+                  _hapticThresholdFired = true;
+                }
+
                 if (widget.onProgressChanged != null) {
                   widget.onProgressChanged!(progress);
                 }
@@ -333,17 +454,16 @@ class _SwipeActionCellState extends State<SwipeActionCell>
                   child: child,
                 );
 
-                if (widget.leftBackground == null &&
-                    widget.rightBackground == null) {
-                  return translate;
-                }
-
                 return Stack(
                   children: [
-                    Positioned.fill(
-                      child: _buildBackground(context, progress),
-                    ),
+                    if (widget.leftBackground != null ||
+                        widget.rightBackground != null)
+                      Positioned.fill(
+                        child: _buildBackground(context, progress),
+                      ),
                     translate,
+                    if (widget.rightSwipe?.showProgressIndicator == true)
+                      _buildProgressIndicator(),
                   ],
                 );
               },
