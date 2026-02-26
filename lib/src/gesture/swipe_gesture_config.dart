@@ -11,6 +11,18 @@ class SwipeGestureConfig {
     this.velocityThreshold = 700.0,
   });
 
+  /// A configuration with a large dead zone for a precise, intentional feel.
+  factory SwipeGestureConfig.tight() => const SwipeGestureConfig(
+        deadZone: 24.0,
+        velocityThreshold: 1000.0,
+      );
+
+  /// A configuration with a small dead zone for a highly sensitive, loose feel.
+  factory SwipeGestureConfig.loose() => const SwipeGestureConfig(
+        deadZone: 4.0,
+        velocityThreshold: 300.0,
+      );
+
   /// Minimum horizontal displacement before a swipe is recognized.
   final double deadZone;
 

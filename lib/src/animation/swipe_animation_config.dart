@@ -12,7 +12,20 @@ class SwipeAnimationConfig {
     this.resistanceFactor = 0.55,
     this.maxTranslationLeft,
     this.maxTranslationRight,
-  });
+  }) : assert(activationThreshold >= 0.0 && activationThreshold <= 1.0,
+            'activationThreshold must be between 0.0 and 1.0, got $activationThreshold');
+
+  /// A snappy animation configuration with high stiffness and early activation.
+  factory SwipeAnimationConfig.snappy() => const SwipeAnimationConfig(
+        activationThreshold: 0.25,
+        completionSpring: SpringConfig(stiffness: 700.0, damping: 35.0),
+      );
+
+  /// A smooth, slower animation configuration with lower stiffness and later activation.
+  factory SwipeAnimationConfig.smooth() => const SwipeAnimationConfig(
+        activationThreshold: 0.5,
+        completionSpring: SpringConfig(stiffness: 180.0, damping: 25.0),
+      );
 
   /// The progress ratio at which a drag release triggers completion.
   final double activationThreshold;

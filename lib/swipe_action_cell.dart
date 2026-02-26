@@ -24,3 +24,10 @@ export 'src/core/typedefs.dart';
 export 'src/gesture/swipe_gesture_config.dart';
 export 'src/visual/swipe_action_background.dart';
 export 'src/widget/swipe_action_cell.dart';
+export 'src/config/right_swipe_config.dart';
+export 'src/config/left_swipe_config.dart';
+export 'src/config/swipe_visual_config.dart';
+export 'src/config/swipe_action_cell_theme.dart';
+
+export 'src/controller/swipe_controller.dart';
+

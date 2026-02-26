@@ -17,7 +17,7 @@ void main() {
               print('State changed to: $s');
               states.add(s);
             },
-            leftSwipe: IntentionalSwipeConfig(
+            leftSwipeConfig: LeftSwipeConfig(
               mode: LeftSwipeMode.autoTrigger,
               postActionBehavior: PostActionBehavior.stay,
               onActionTriggered: () => triggered = true,

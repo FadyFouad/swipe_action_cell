@@ -1,6 +1,6 @@
 name: swipe_action_cell
 description: A highly configurable swipe interaction widget with asymmetric left/right actions — progressive increments and intentional committed actions.
-version: 0.0.1
+version: 0.1.0
 homepage: https://github.com/FadyFouad/swipe_action_cell
 repository: https://github.com/FadyFouad/swipe_action_cell
 issue_tracker: https://github.com/FadyFouad/swipe_action_cell/issues
