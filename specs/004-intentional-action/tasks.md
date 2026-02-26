@@ -83,19 +83,19 @@
 
 ### Tests for User Story 2 (write to fail first)
 
-- [ ] T022 [P] [US2] Write `SwipeActionPanel` widget tests (renders 1–3 buttons, non-destructive button fires `onTap` and calls `onClose`, `onClose` called on any tap) in `test/actions/intentional/swipe_action_panel_test.dart`
-- [ ] T023 [US2] Write widget test for reveal panel opens on left swipe past threshold and `onPanelOpened` fires in `test/widget/swipe_action_cell_intentional_test.dart`
-- [ ] T024 [US2] Write widget test for action button tap fires `onTap` and `onPanelClosed` in `test/widget/swipe_action_cell_intentional_test.dart`
-- [ ] T025 [US2] Write widget test for cell body tap closes panel and fires `onPanelClosed` (no `onTap`) in `test/widget/swipe_action_cell_intentional_test.dart`
-- [ ] T026 [US2] Write widget test for right swipe while panel is open closes panel and fires `onPanelClosed` in `test/widget/swipe_action_cell_intentional_test.dart`
+- [x] T022 [P] [US2] Write `SwipeActionPanel` widget tests (renders 1–3 buttons, non-destructive button fires `onTap` and calls `onClose`, `onClose` called on any tap) in `test/actions/intentional/swipe_action_panel_test.dart`
+- [x] T023 [US2] Write widget test for reveal panel opens on left swipe past threshold and `onPanelOpened` fires in `test/widget/swipe_action_cell_intentional_test.dart`
+- [x] T024 [US2] Write widget test for action button tap fires `onTap` and `onPanelClosed` in `test/widget/swipe_action_cell_intentional_test.dart`
+- [x] T025 [US2] Write widget test for cell body tap closes panel and fires `onPanelClosed` (no `onTap`) in `test/widget/swipe_action_cell_intentional_test.dart`
+- [x] T026 [US2] Write widget test for right swipe while panel is open closes panel and fires `onPanelClosed` in `test/widget/swipe_action_cell_intentional_test.dart`
 
 ### Implementation for User Story 2
 
-- [ ] T027 [US2] Create `SwipeActionPanel` `StatefulWidget` (Row of `Expanded` action buttons, each with `GestureDetector`; fires button's `onTap` then calls `onClose`; `enableHaptic` param plumbed through; `_expandedIndex` field stub for US4) in `lib/src/actions/intentional/swipe_action_panel.dart`
-- [ ] T028 [US2] Implement reveal path in `_handleIntentionalActionSettled()`: transition to `SwipeState.revealed`, call `onPanelOpened` in `lib/src/widget/swipe_action_cell.dart`
-- [ ] T029 [US2] Implement `_maybeWrapWithBodyTapInterceptor(Widget child)` (wrap translated child when `_state == revealed && leftSwipe != null`; tap closes panel via `_snapBack`) and apply in `build()` in `lib/src/widget/swipe_action_cell.dart`
-- [ ] T030 [US2] Add `_buildRevealPanel(double width)` (`Positioned` `SwipeActionPanel` at right edge with width from `_computeEffectivePanelWidth`) and render it in `build()` Stack when `mode == reveal && state == revealed && actions.isNotEmpty` in `lib/src/widget/swipe_action_cell.dart`
-- [ ] T031 [US2] Wire `onPanelClosed` callback in `animatingToClose` completion handler for `mode == reveal` path in `lib/src/widget/swipe_action_cell.dart`
+- [x] T027 [US2] Create `SwipeActionPanel` `StatefulWidget` (Row of `Expanded` action buttons, each with `GestureDetector`; fires button's `onTap` then calls `onClose`; `enableHaptic` param plumbed through; `_expandedIndex` field stub for US4) in `lib/src/actions/intentional/swipe_action_panel.dart`
+- [x] T028 [US2] Implement reveal path in `_handleIntentionalActionSettled()`: transition to `SwipeState.revealed`, call `onPanelOpened` in `lib/src/widget/swipe_action_cell.dart`
+- [x] T029 [US2] Implement `_maybeWrapWithBodyTapInterceptor(Widget child)` (wrap translated child when `_state == revealed && leftSwipe != null`; tap closes panel via `_snapBack`) and apply in `build()` in `lib/src/widget/swipe_action_cell.dart`
+- [x] T030 [US2] Add `_buildRevealPanel(double width)` (`Positioned` `SwipeActionPanel` at right edge with width from `_computeEffectivePanelWidth`) and render it in `build()` Stack when `mode == reveal && state == revealed && actions.isNotEmpty` in `lib/src/widget/swipe_action_cell.dart`
+- [x] T031 [US2] Wire `onPanelClosed` callback in `animatingToClose` completion handler for `mode == reveal` path in `lib/src/widget/swipe_action_cell.dart`
 
 **Checkpoint**: US2 complete — reveal panel opens, buttons close panel and fire callbacks, body tap and right swipe close panel with `onPanelClosed`.
 
@@ -109,15 +109,15 @@
 
 ### Tests for User Story 3 (write to fail first)
 
-- [ ] T032 [US3] Write widget test for `postActionBehavior: snapBack` — controller returns to 0.0 and `onSwipeCancelled` does NOT fire after successful trigger in `test/widget/swipe_action_cell_intentional_test.dart`
-- [ ] T033 [US3] Write widget test for `postActionBehavior: animateOut` — state transitions to `animatingOut`, `onActionTriggered` fires, new drag during slide-out is ignored in `test/widget/swipe_action_cell_intentional_test.dart`
-- [ ] T034 [US3] Write widget test for `postActionBehavior: stay` — state is `revealed` after action fires; right swipe returns cell to idle in `test/widget/swipe_action_cell_intentional_test.dart`
+- [x] T032 [US3] Write widget test for `postActionBehavior: snapBack` — controller returns to 0.0 and `onSwipeCancelled` does NOT fire after successful trigger in `test/widget/swipe_action_cell_intentional_test.dart`
+- [x] T033 [US3] Write widget test for `postActionBehavior: animateOut` — state transitions to `animatingOut`, `onActionTriggered` fires, new drag during slide-out is ignored in `test/widget/swipe_action_cell_intentional_test.dart`
+- [x] T034 [US3] Write widget test for `postActionBehavior: stay` — state is `revealed` after action fires; right swipe returns cell to idle in `test/widget/swipe_action_cell_intentional_test.dart`
 
 ### Implementation for User Story 3
 
-- [ ] T035 [US3] Implement `animateOut` path in `_applyPostActionBehavior()`: transition to `SwipeState.animatingOut`, call `_animateOut()` in `lib/src/widget/swipe_action_cell.dart`
-- [ ] T036 [US3] Implement `stay` path in `_applyPostActionBehavior()`: transition to `SwipeState.revealed`; confirm right swipe from `revealed` follows existing `dragging → animatingToClose → idle` path in `lib/src/widget/swipe_action_cell.dart`
-- [ ] T037 [US3] Add `animatingOut` terminal case (`return` — no state transition) in `_handleAnimationStatusChange` completion handler in `lib/src/widget/swipe_action_cell.dart`
+- [x] T035 [US3] Implement `animateOut` path in `_applyPostActionBehavior()`: transition to `SwipeState.animatingOut`, call `_animateOut()` in `lib/src/widget/swipe_action_cell.dart`
+- [x] T036 [US3] Implement `stay` path in `_applyPostActionBehavior()`: transition to `SwipeState.revealed`; confirm right swipe from `revealed` follows existing `dragging → animatingToClose → idle` path in `lib/src/widget/swipe_action_cell.dart`
+- [x] T037 [US3] Add `animatingOut` terminal case (`return` — no state transition) in `_handleAnimationStatusChange` completion handler in `lib/src/widget/swipe_action_cell.dart`
 
 **Checkpoint**: US3 complete — all three post-action behaviors work correctly; `animateOut` guards ignore new drags.
 
@@ -131,13 +131,13 @@
 
 ### Tests for User Story 4 (write to fail first)
 
-- [ ] T038 [US4] Write `SwipeActionPanel` test: destructive button first tap expands to `panelWidth` and `onTap` NOT called in `test/actions/intentional/swipe_action_panel_test.dart`
-- [ ] T039 [US4] Write `SwipeActionPanel` test: destructive button second tap fires `onTap` and calls `onClose` in `test/actions/intentional/swipe_action_panel_test.dart`
-- [ ] T040 [US4] Write `SwipeActionPanel` test: non-destructive button tap while destructive is expanded fires non-destructive `onTap` immediately in `test/actions/intentional/swipe_action_panel_test.dart`
+- [x] T038 [US4] Write `SwipeActionPanel` test: destructive button first tap expands to `panelWidth` and `onTap` NOT called in `test/actions/intentional/swipe_action_panel_test.dart`
+- [x] T039 [US4] Write `SwipeActionPanel` test: destructive button second tap fires `onTap` and calls `onClose` in `test/actions/intentional/swipe_action_panel_test.dart`
+- [x] T040 [US4] Write `SwipeActionPanel` test: non-destructive button tap while destructive is expanded fires non-destructive `onTap` immediately in `test/actions/intentional/swipe_action_panel_test.dart`
 
 ### Implementation for User Story 4
 
-- [ ] T041 [US4] Implement destructive confirm-expand in `SwipeActionPanel`: add `int? _expandedIndex` field; on first destructive tap set index via `setState`; on second tap fire `onTap` + call `onClose` + reset; use `AnimatedContainer` (duration: 200ms) for width expansion to `panelWidth`; hide other buttons while one is expanded in `lib/src/actions/intentional/swipe_action_panel.dart`
+- [x] T041 [US4] Implement destructive confirm-expand in `SwipeActionPanel`: add `int? _expandedIndex` field; on first destructive tap set index via `setState`; on second tap fire `onTap` + call `onClose` + reset; use `AnimatedContainer` (duration: 200ms) for width expansion to `panelWidth`; hide other buttons while one is expanded in `lib/src/actions/intentional/swipe_action_panel.dart`
 
 **Checkpoint**: US4 complete — destructive actions require two taps; expansion is animated; other buttons collapse or fire immediately.
 
@@ -151,16 +151,16 @@
 
 ### Tests for User Story 5 (write to fail first)
 
-- [ ] T042 [US5] Write widget test: `requireConfirmation: true` first swipe → state `revealed`, `onActionTriggered` NOT fired in `test/widget/swipe_action_cell_intentional_test.dart`
-- [ ] T043 [US5] Write widget test: second left swipe past threshold from confirmation state → `onActionTriggered` fires in `test/widget/swipe_action_cell_intentional_test.dart`
-- [ ] T044 [US5] Write widget test: tap on `leftBackground` area from confirmation state → `onActionTriggered` fires in `test/widget/swipe_action_cell_intentional_test.dart`
-- [ ] T045 [US5] Write widget test: body tap from confirmation state → snaps back and `onActionTriggered` NOT fired in `test/widget/swipe_action_cell_intentional_test.dart`
+- [x] T042 [US5] Write widget test: `requireConfirmation: true` first swipe → state `revealed`, `onActionTriggered` NOT fired in `test/widget/swipe_action_cell_intentional_test.dart`
+- [x] T043 [US5] Write widget test: second left swipe past threshold from confirmation state → `onActionTriggered` fires in `test/widget/swipe_action_cell_intentional_test.dart`
+- [x] T044 [US5] Write widget test: tap on `leftBackground` area from confirmation state → `onActionTriggered` fires in `test/widget/swipe_action_cell_intentional_test.dart`
+- [x] T045 [US5] Write widget test: body tap from confirmation state → snaps back and `onActionTriggered` NOT fired in `test/widget/swipe_action_cell_intentional_test.dart`
 
 ### Implementation for User Story 5
 
-- [ ] T046 [US5] Implement `_awaitingConfirmation` check in `_handleIntentionalActionSettled()`: when `requireConfirmation && !_awaitingConfirmation`, set flag and transition to `revealed` without firing action in `lib/src/widget/swipe_action_cell.dart`
-- [ ] T047 [US5] Add confirmation background-area tap overlay: `Positioned.fill` `GestureDetector` (`HitTestBehavior.translucent`, calls `_applyIntentionalAction()`) rendered in `build()` Stack only when `_awaitingConfirmation == true` in `lib/src/widget/swipe_action_cell.dart`
-- [ ] T048 [US5] Update `_maybeWrapWithBodyTapInterceptor()` / `_handleBodyTapInRevealedState()`: body tap when `_awaitingConfirmation` → reset flag, snap back, do NOT fire action in `lib/src/widget/swipe_action_cell.dart`
+- [x] T046 [US5] Implement `_awaitingConfirmation` check in `_handleIntentionalActionSettled()`: when `requireConfirmation && !_awaitingConfirmation`, set flag and transition to `revealed` without firing action in `lib/src/widget/swipe_action_cell.dart`
+- [x] T047 [US5] Add confirmation background-area tap overlay: `Positioned.fill` `GestureDetector` (`HitTestBehavior.translucent`, calls `_applyIntentionalAction()`) rendered in `build()` Stack only when `_awaitingConfirmation == true` in `lib/src/widget/swipe_action_cell.dart`
+- [x] T048 [US5] Update `_maybeWrapWithBodyTapInterceptor()` / `_handleBodyTapInRevealedState()`: body tap when `_awaitingConfirmation` → reset flag, snap back, do NOT fire action in `lib/src/widget/swipe_action_cell.dart`
 
 **Checkpoint**: US5 complete — confirmation gate works for second-swipe and background-tap confirm paths; body tap and right swipe cancel correctly.
 
@@ -174,13 +174,13 @@
 
 ### Tests for User Story 6 (write to fail first)
 
-- [ ] T049 [US6] Write widget test for `enableHaptic: true` — light haptic fires exactly once at threshold crossing (mock `HapticFeedback` via platform channel in `TestDefaultBinaryMessengerBinding`) in `test/widget/swipe_action_cell_intentional_test.dart`
-- [ ] T050 [US6] Write widget test for `enableHaptic: true` — medium haptic fires on `onActionTriggered` fire and on reveal button tap in `test/widget/swipe_action_cell_intentional_test.dart`
+- [x] T049 [US6] Write widget test for `enableHaptic: true` — light haptic fires exactly once at threshold crossing (mock `HapticFeedback` via platform channel in `TestDefaultBinaryMessengerBinding`) in `test/widget/swipe_action_cell_intentional_test.dart`
+- [x] T050 [US6] Write widget test for `enableHaptic: true` — medium haptic fires on `onActionTriggered` fire and on reveal button tap in `test/widget/swipe_action_cell_intentional_test.dart`
 
 ### Implementation for User Story 6
 
-- [ ] T051 [US6] Add left-swipe threshold haptic check in `AnimatedBuilder` builder: `leftSwipe?.enableHaptic == true && _lockedDirection == left && progress.isActivated && !_hapticThresholdFired` → `HapticFeedback.lightImpact(); _hapticThresholdFired = true` in `lib/src/widget/swipe_action_cell.dart`
-- [ ] T052 [US6] Add `HapticFeedback.mediumImpact()` call in `_applyIntentionalAction()` (before `onActionTriggered` callback); add `enableHaptic` parameter to `SwipeActionPanel` and call `HapticFeedback.mediumImpact()` in `_handleButtonTap()` before firing `onTap` in `lib/src/actions/intentional/swipe_action_panel.dart`
+- [x] T051 [US6] Add left-swipe threshold haptic check in `AnimatedBuilder` builder: `leftSwipe?.enableHaptic == true && _lockedDirection == left && progress.isActivated && !_hapticThresholdFired` → `HapticFeedback.lightImpact(); _hapticThresholdFired = true` in `lib/src/widget/swipe_action_cell.dart`
+- [x] T052 [US6] Add `HapticFeedback.mediumImpact()` call in `_applyIntentionalAction()` (before `onActionTriggered` callback); add `enableHaptic` parameter to `SwipeActionPanel` and call `HapticFeedback.mediumImpact()` in `_handleButtonTap()` before firing `onTap` in `lib/src/actions/intentional/swipe_action_panel.dart`
 
 **Checkpoint**: US6 complete — haptic patterns fire at correct milestones with no false positives or double-fires.
 
@@ -194,13 +194,13 @@
 
 ### Tests for User Story 7 (write to fail first)
 
-- [ ] T053 [US7] Write widget test: right swipe on dual-config cell fires only F3 callbacks; no left-swipe callbacks fire in `test/widget/swipe_action_cell_intentional_test.dart`
-- [ ] T054 [US7] Write widget test: left swipe on dual-config cell fires only F4 callbacks; no right-swipe callbacks fire in `test/widget/swipe_action_cell_intentional_test.dart`
-- [ ] T055 [US7] Write widget test: reveal panel open → right swipe closes panel; F3 progressive does NOT fire in `test/widget/swipe_action_cell_intentional_test.dart`
+- [x] T053 [US7] Write widget test: right swipe on dual-config cell fires only F3 callbacks; no left-swipe callbacks fire in `test/widget/swipe_action_cell_intentional_test.dart`
+- [x] T054 [US7] Write widget test: left swipe on dual-config cell fires only F4 callbacks; no right-swipe callbacks fire in `test/widget/swipe_action_cell_intentional_test.dart`
+- [x] T055 [US7] Write widget test: reveal panel open → right swipe closes panel; F3 progressive does NOT fire in `test/widget/swipe_action_cell_intentional_test.dart`
 
 ### Implementation for User Story 7
 
-- [ ] T056 [US7] Review and verify direction guards in `_handleAnimationStatusChange`, `_handleDragUpdate`, and `animatingToClose` completion handler: confirm `_lockedDirection` checks prevent cross-direction callback leakage; add any missing guards in `lib/src/widget/swipe_action_cell.dart`
+- [x] T056 [US7] Review and verify direction guards in `_handleAnimationStatusChange`, `_handleDragUpdate`, and `animatingToClose` completion handler: confirm `_lockedDirection` checks prevent cross-direction callback leakage; add any missing guards in `lib/src/widget/swipe_action_cell.dart`
 
 **Checkpoint**: US7 complete — both directions independently functional on the same cell instance with zero state leakage.
 
@@ -210,10 +210,10 @@
 
 **Purpose**: Barrel exports, regression check against F001–F003, static analysis, full test suite.
 
-- [ ] T057 Add 5 new exports to `lib/swipe_action_cell.dart`: `left_swipe_mode.dart`, `post_action_behavior.dart`, `swipe_action.dart`, `intentional_swipe_config.dart`, `swipe_action_panel.dart`
-- [ ] T058 Run full test suite: `flutter test`
-- [ ] T059 Run static analysis: `flutter analyze`
-- [ ] T060 Run formatter check: `dart format --set-exit-if-changed .`
+- [x] T057 Add 5 new exports to `lib/swipe_action_cell.dart`: `left_swipe_mode.dart`, `post_action_behavior.dart`, `swipe_action.dart`, `intentional_swipe_config.dart`, `swipe_action_panel.dart`
+- [x] T058 Run full test suite: `flutter test`
+- [x] T059 Run static analysis: `flutter analyze`
+- [x] T060 Run formatter check: `dart format --set-exit-if-changed .`
 
 ---
 

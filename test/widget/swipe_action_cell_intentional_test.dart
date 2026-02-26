@@ -1,3 +1,5 @@
+import "package:flutter/services.dart";
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:swipe_action_cell/swipe_action_cell.dart';
@@ -43,13 +45,8 @@ Future<void> swipeLeft(
 }
 
 /// Simulates a right swipe past the activation threshold.
-Future<void> swipeRight(
-  WidgetTester tester, {
-  double distance = 260.0,
-}) async {
-  final gesture = await tester.startGesture(const Offset(100, 30));
-  await gesture.moveBy(Offset(distance, 0));
-  await gesture.up();
+Future<void> swipeRight(WidgetTester tester, {double distance = 260.0}) async {
+  await tester.drag(find.byType(SwipeActionCell), Offset(distance, 0));
   await tester.pumpAndSettle();
 }
 
@@ -690,6 +687,75 @@ void main() {
       await swipeLeft(tester);
 
       expect(states, contains(SwipeState.revealed));
+    });
+  });
+
+  // ─── US4: Destructive Confirm-Expand ───────────────────────────────────────
+
+  group('US4: Destructive Action Confirm-Expand', () {
+    testWidgets('destructive button in cell requires two taps', (tester) async {
+      bool tapped = false;
+      await tester.pumpWidget(buildCell(
+        child: const Text('cell'),
+        leftSwipe: IntentionalSwipeConfig(
+          mode: LeftSwipeMode.reveal,
+          actions: [
+            SwipeAction(
+              icon: const Icon(Icons.delete),
+              backgroundColor: const Color(0xFFE53935),
+              foregroundColor: const Color(0xFFFFFFFF),
+              onTap: () => tapped = true,
+              isDestructive: true,
+            ),
+          ],
+        ),
+      ));
+
+      await swipeLeft(tester);
+      expect(find.byType(SwipeActionPanel), findsOneWidget);
+
+      // First tap — expand.
+      await tester.tap(find.byType(GestureDetector).last);
+      await tester.pumpAndSettle();
+      expect(tapped, isFalse);
+
+      // Second tap — confirm.
+      await tester.tap(find.byType(GestureDetector).last);
+      await tester.pumpAndSettle();
+      expect(tapped, isTrue);
+    });
+  });
+
+  // ─── US6: Haptic Feedback ───────────────────────────────────────────────────
+
+  group('US6: Haptic Feedback', () {
+    testWidgets('enableHaptic: true fires light and medium impacts', (tester) async {
+      final log = <MethodCall>[];
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (MethodCall methodCall) async {
+          if (methodCall.method == 'HapticFeedback.vibrate') {
+            log.add(methodCall);
+          }
+          return null;
+        },
+      );
+
+      bool triggered = false;
+      await tester.pumpWidget(buildCell(
+        child: const Text('cell'),
+        leftSwipe: IntentionalSwipeConfig(
+          mode: LeftSwipeMode.autoTrigger,
+          enableHaptic: true,
+          onActionTriggered: () => triggered = true,
+        ),
+      ));
+
+      await swipeLeft(tester);
+
+      // Expect at least two haptic calls: light at threshold, medium on action.
+      expect(log.length, greaterThanOrEqualTo(2));
+      expect(triggered, isTrue);
     });
   });
 }
