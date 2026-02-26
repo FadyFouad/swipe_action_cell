@@ -6,6 +6,11 @@
 /// ```
 library;
 
+export 'src/actions/intentional/intentional_swipe_config.dart';
+export 'src/actions/intentional/left_swipe_mode.dart';
+export 'src/actions/intentional/post_action_behavior.dart';
+export 'src/actions/intentional/swipe_action.dart';
+export 'src/actions/intentional/swipe_action_panel.dart';
 export 'src/actions/progressive/overflow_behavior.dart';
 export 'src/actions/progressive/progress_indicator_config.dart';
 export 'src/actions/progressive/progressive_swipe_config.dart';
