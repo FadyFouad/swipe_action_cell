@@ -742,8 +742,8 @@ class SwipeActionCellState extends State<SwipeActionCell>
     }
     // F8: RTL-aware background selection — forward drag shows rightBackground,
     // backward drag shows leftBackground, regardless of physical direction.
-    final isForward = progress.direction ==
-        SwipeDirectionResolver.forwardPhysical(_isRtl);
+    final isForward =
+        progress.direction == SwipeDirectionResolver.forwardPhysical(_isRtl);
     final builder = isForward
         ? effectiveVisualConfig.rightBackground
         : effectiveVisualConfig.leftBackground;
@@ -870,8 +870,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
     if (_isAnimating || _resolvedBackwardConfig == null) return;
     _lockedDirection = SwipeDirectionResolver.backwardPhysical(_isRtl);
     _updateState(SwipeState.animatingToOpen);
-    _animateToOpen(
-        _controller.value, -_leftMaxTranslation(_widgetWidth), 0.0);
+    _animateToOpen(_controller.value, -_leftMaxTranslation(_widgetWidth), 0.0);
   }
 
   /// Whether an animation is currently in progress.
@@ -893,10 +892,8 @@ class SwipeActionCellState extends State<SwipeActionCell>
   /// Announces panel open via [SemanticsService].
   void _announcePanelOpen() {
     if (!mounted) return;
-    final raw =
-        widget.semanticConfig?.panelOpenLabel?.resolve(context);
-    final msg =
-        (raw != null && raw.isNotEmpty) ? raw : 'Action panel open';
+    final raw = widget.semanticConfig?.panelOpenLabel?.resolve(context);
+    final msg = (raw != null && raw.isNotEmpty) ? raw : 'Action panel open';
     // ignore: deprecated_member_use
     SemanticsService.announce(msg, Directionality.of(context));
   }
@@ -943,8 +940,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
       focusNode: _cellFocusNode,
       onKeyEvent: _handleKeyEvent,
       child: Semantics(
-        label:
-            (cellLabel != null && cellLabel.isNotEmpty) ? cellLabel : null,
+        label: (cellLabel != null && cellLabel.isNotEmpty) ? cellLabel : null,
         customSemanticsActions:
             semanticActions.isEmpty ? null : semanticActions,
         child: LayoutBuilder(
@@ -963,14 +959,13 @@ class SwipeActionCellState extends State<SwipeActionCell>
                         ? (effectiveAnimationConfig.maxTranslationRight ??
                             width * 0.6)
                         : _leftMaxTranslation(width);
-                    final ratio = maxT > 0
-                        ? (offset.abs() / maxT).clamp(0.0, 1.0)
-                        : 0.0;
+                    final ratio =
+                        maxT > 0 ? (offset.abs() / maxT).clamp(0.0, 1.0) : 0.0;
                     final progress = SwipeProgress(
                       direction: _lockedDirection,
                       ratio: ratio,
-                      isActivated: ratio >=
-                          effectiveAnimationConfig.activationThreshold,
+                      isActivated:
+                          ratio >= effectiveAnimationConfig.activationThreshold,
                       rawOffset: offset,
                     );
                     if (_dragIsForward &&

@@ -12,7 +12,8 @@ class SemanticLabel {
 
   /// A builder function that resolves the label from [BuildContext],
   /// enabling locale-aware labels.
-  const SemanticLabel.builder(String Function(BuildContext context) this._builder)
+  const SemanticLabel.builder(
+      String Function(BuildContext context) this._builder)
       : _value = null;
 
   final String? _value;
