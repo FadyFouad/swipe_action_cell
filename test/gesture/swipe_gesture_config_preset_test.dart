@@ -28,8 +28,10 @@ void main() {
     });
 
     test('both support copyWith', () {
-      expect(SwipeGestureConfig.tight().copyWith(deadZone: 10.0).deadZone, 10.0);
-      expect(SwipeGestureConfig.loose().copyWith(deadZone: 10.0).deadZone, 10.0);
+      expect(
+          SwipeGestureConfig.tight().copyWith(deadZone: 10.0).deadZone, 10.0);
+      expect(
+          SwipeGestureConfig.loose().copyWith(deadZone: 10.0).deadZone, 10.0);
     });
   });
 }

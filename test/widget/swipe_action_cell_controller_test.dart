@@ -107,7 +107,8 @@ void main() {
     });
 
     // (c) openRight() triggers progressive increment + snap-back
-    testWidgets('controller.openRight() triggers progressive increment and snaps back',
+    testWidgets(
+        'controller.openRight() triggers progressive increment and snaps back',
         (tester) async {
       final controller = SwipeController();
       addTearDown(controller.dispose);
@@ -124,7 +125,8 @@ void main() {
     });
 
     // (d) resetProgress() resets currentProgress to initialValue
-    testWidgets('controller.resetProgress() resets currentProgress to initialValue',
+    testWidgets(
+        'controller.resetProgress() resets currentProgress to initialValue',
         (tester) async {
       final controller = SwipeController();
       addTearDown(controller.dispose);
@@ -157,7 +159,8 @@ void main() {
     });
 
     // (f) no controller provided → widget works normally
-    testWidgets('widget without controller creates internal controller and works',
+    testWidgets(
+        'widget without controller creates internal controller and works',
         (tester) async {
       await tester.pumpWidget(_buildLeftCell());
       expect(tester.takeException(), isNull);
@@ -172,18 +175,21 @@ void main() {
       addTearDown(controllerA.dispose);
       addTearDown(controllerB.dispose);
 
-      await tester.pumpWidget(_buildLeftCell(controller: controllerA, cellKey: key));
+      await tester
+          .pumpWidget(_buildLeftCell(controller: controllerA, cellKey: key));
       await tester.pump();
 
       // Swap controller.
-      await tester.pumpWidget(_buildLeftCell(controller: controllerB, cellKey: key));
+      await tester
+          .pumpWidget(_buildLeftCell(controller: controllerB, cellKey: key));
       await tester.pump();
 
       expect(tester.takeException(), isNull);
     });
 
     // (h) rebuild with same controller does not re-attach or double-register
-    testWidgets('rebuild with same controller does not double-attach', (tester) async {
+    testWidgets('rebuild with same controller does not double-attach',
+        (tester) async {
       final controller = SwipeController();
       addTearDown(controller.dispose);
 

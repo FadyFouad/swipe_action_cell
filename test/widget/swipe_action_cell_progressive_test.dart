@@ -44,7 +44,7 @@ void main() {
 
       await tester.drag(find.byType(SwipeActionCell), const Offset(200, 0));
       await tester.pumpAndSettle();
-      
+
       expect(started, isTrue);
     });
 
@@ -73,7 +73,7 @@ void main() {
 
     testWidgets('controlled value overrides internal state', (tester) async {
       double currentVal = 5.0;
-      
+
       Widget build(double val) => MaterialApp(
             home: Scaffold(
               body: SwipeActionCell(
@@ -83,13 +83,14 @@ void main() {
                   maxValue: 10.0,
                   value: val,
                 ),
-                child: const SizedBox(width: 400, height: 60, child: Text('cell')),
+                child:
+                    const SizedBox(width: 400, height: 60, child: Text('cell')),
               ),
             ),
           );
 
       await tester.pumpWidget(build(currentVal));
-      
+
       // Update external state
       currentVal = 9.0;
       await tester.pumpWidget(build(currentVal));

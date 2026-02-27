@@ -27,7 +27,10 @@ void main() {
       );
 
       // Swipe right -> reveal rightBackground
-      await tester.drag(find.byType(SwipeActionCell), warnIfMissed: false, const Offset(50, 0));
+      await tester.drag(
+          find.byType(SwipeActionCell),
+          warnIfMissed: false,
+          const Offset(50, 0));
       await tester.pump();
       expect(find.byKey(rightKey), findsOneWidget);
       expect(find.byKey(leftKey), findsNothing);
@@ -49,7 +52,10 @@ void main() {
           ),
         ),
       );
-      await tester.drag(find.byType(SwipeActionCell), warnIfMissed: false, const Offset(-50, 0));
+      await tester.drag(
+          find.byType(SwipeActionCell),
+          warnIfMissed: false,
+          const Offset(-50, 0));
       await tester.pump();
       expect(find.byKey(leftKey), findsOneWidget);
       expect(find.byKey(rightKey), findsNothing);
@@ -77,12 +83,18 @@ void main() {
       );
 
       // Try swiping left
-      await tester.drag(find.byType(SwipeActionCell), warnIfMissed: false, const Offset(-50, 0));
+      await tester.drag(
+          find.byType(SwipeActionCell),
+          warnIfMissed: false,
+          const Offset(-50, 0));
       await tester.pump();
       expect(find.byKey(leftKey), findsNothing);
 
       // Try swiping right
-      await tester.drag(find.byType(SwipeActionCell), warnIfMissed: false, const Offset(50, 0));
+      await tester.drag(
+          find.byType(SwipeActionCell),
+          warnIfMissed: false,
+          const Offset(50, 0));
       await tester.pump();
       expect(find.byKey(rightKey), findsOneWidget);
     });
@@ -103,7 +115,10 @@ void main() {
         ),
       );
 
-      await tester.drag(find.byType(SwipeActionCell), warnIfMissed: false, const Offset(50, 0));
+      await tester.drag(
+          find.byType(SwipeActionCell),
+          warnIfMissed: false,
+          const Offset(50, 0));
       await tester.pump();
       expect(find.byKey(rightKey), findsNothing);
     });

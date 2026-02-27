@@ -39,7 +39,8 @@ Future<void> swipeLeft(
   WidgetTester tester, {
   double distance = 260.0,
 }) async {
-  await tester.drag(find.byType(SwipeActionCell), warnIfMissed: false, Offset(-distance, 0));
+  await tester.drag(
+      find.byType(SwipeActionCell), warnIfMissed: false, Offset(-distance, 0));
   await tester.pumpAndSettle();
 }
 
@@ -48,13 +49,15 @@ Future<void> swipeRight(
   WidgetTester tester, {
   double distance = 260.0,
 }) async {
-  await tester.drag(find.byType(SwipeActionCell), warnIfMissed: false, Offset(distance, 0));
+  await tester.drag(
+      find.byType(SwipeActionCell), warnIfMissed: false, Offset(distance, 0));
   await tester.pumpAndSettle();
 }
 
 /// Simulates a fling to the left.
 Future<void> flingLeft(WidgetTester tester) async {
-  await tester.fling(find.byType(SwipeActionCell), const Offset(-260, 0), 1000, warnIfMissed: false);
+  await tester.fling(find.byType(SwipeActionCell), const Offset(-260, 0), 1000,
+      warnIfMissed: false);
   await tester.pumpAndSettle();
 }
 
@@ -71,7 +74,8 @@ Future<void> swipeLeftBelowThreshold(WidgetTester tester) async {
 
 void main() {
   group('US1: Auto-Trigger Basic', () {
-    testWidgets('above-threshold left swipe fires onActionTriggered', (tester) async {
+    testWidgets('above-threshold left swipe fires onActionTriggered',
+        (tester) async {
       bool triggered = false;
       await tester.pumpWidget(buildCell(
         child: const Text('cell'),
@@ -101,7 +105,8 @@ void main() {
       expect(triggered, isTrue);
     });
 
-    testWidgets('below-threshold release does NOT fire onActionTriggered', (tester) async {
+    testWidgets('below-threshold release does NOT fire onActionTriggered',
+        (tester) async {
       bool triggered = false;
       await tester.pumpWidget(buildCell(
         child: const Text('cell'),
@@ -116,7 +121,8 @@ void main() {
       expect(triggered, isFalse);
     });
 
-    testWidgets('below-threshold release fires onSwipeCancelled', (tester) async {
+    testWidgets('below-threshold release fires onSwipeCancelled',
+        (tester) async {
       bool cancelled = false;
       await tester.pumpWidget(buildCell(
         child: const Text('cell'),
@@ -157,7 +163,8 @@ void main() {
       expect(opened, isTrue);
     });
 
-    testWidgets('tapping action button triggers onTap and closes panel', (tester) async {
+    testWidgets('tapping action button triggers onTap and closes panel',
+        (tester) async {
       bool tapped = false;
       await tester.pumpWidget(buildCell(
         child: const Text('cell'),
@@ -182,7 +189,8 @@ void main() {
       expect(find.byType(SwipeActionPanel), findsNothing);
     });
 
-    testWidgets('tapping cell body while panel open closes panel', (tester) async {
+    testWidgets('tapping cell body while panel open closes panel',
+        (tester) async {
       await tester.pumpWidget(buildCell(
         child: const Text('cell'),
         leftSwipeConfig: LeftSwipeConfig(
@@ -262,7 +270,9 @@ void main() {
   });
 
   group('US5: Confirmation Gate', () {
-    testWidgets('requireConfirmation: true enters revealed state instead of firing', (tester) async {
+    testWidgets(
+        'requireConfirmation: true enters revealed state instead of firing',
+        (tester) async {
       bool triggered = false;
       await tester.pumpWidget(buildCell(
         child: const Text('cell'),
@@ -339,7 +349,8 @@ void main() {
   });
 
   group('US7: Coexistence with F3 (rightSwipe + leftSwipe)', () {
-    testWidgets('right swipe still works with leftSwipe configured', (tester) async {
+    testWidgets('right swipe still works with leftSwipe configured',
+        (tester) async {
       double? value;
       await tester.pumpWidget(buildCell(
         child: const Text('cell'),
@@ -358,14 +369,20 @@ void main() {
       expect(value, 20.0);
     });
 
-    testWidgets('reveal panel open -> right swipe closes panel; F3 does NOT fire', (tester) async {
+    testWidgets(
+        'reveal panel open -> right swipe closes panel; F3 does NOT fire',
+        (tester) async {
       double? value;
       await tester.pumpWidget(buildCell(
         child: const Text('cell'),
         leftSwipeConfig: LeftSwipeConfig(
           mode: LeftSwipeMode.reveal,
           actions: [
-            SwipeAction(icon: const Icon(Icons.abc), backgroundColor: Colors.red, foregroundColor: Colors.white, onTap: () {}),
+            SwipeAction(
+                icon: const Icon(Icons.abc),
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                onTap: () {}),
           ],
         ),
         rightSwipeConfig: RightSwipeConfig(
@@ -385,7 +402,8 @@ void main() {
   });
 
   group('leftSwipeConfig: null — no regression', () {
-    testWidgets('null leftSwipeConfig: right swipe still works', (tester) async {
+    testWidgets('null leftSwipeConfig: right swipe still works',
+        (tester) async {
       double? value;
       await tester.pumpWidget(buildCell(
         child: const Text('cell'),
@@ -401,7 +419,8 @@ void main() {
       expect(value, 20.0);
     });
 
-    testWidgets('null leftSwipeConfig: left swipe enters revealed state', (tester) async {
+    testWidgets('null leftSwipeConfig: left swipe enters revealed state',
+        (tester) async {
       final states = <SwipeState>[];
       await tester.pumpWidget(MaterialApp(
         home: Scaffold(
@@ -461,9 +480,11 @@ void main() {
   // ─── US6: Haptic Feedback ───────────────────────────────────────────────────
 
   group('US6: Haptic Feedback', () {
-    testWidgets('enableHaptic: true fires light and medium impacts', (tester) async {
+    testWidgets('enableHaptic: true fires light and medium impacts',
+        (tester) async {
       final log = <MethodCall>[];
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
         SystemChannels.platform,
         (MethodCall methodCall) async {
           if (methodCall.method == 'HapticFeedback.vibrate') {

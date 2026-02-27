@@ -107,7 +107,8 @@ void main() {
 
   group('SwipeControllerProvider (US4)', () {
     // (a) cells without explicit controller auto-register when mounted inside provider
-    testWidgets('cells auto-register when mounted inside provider', (tester) async {
+    testWidgets('cells auto-register when mounted inside provider',
+        (tester) async {
       await tester.pumpWidget(_buildCellInProvider());
       await tester.pump();
       // If auto-registration crashed, the test would throw.
@@ -252,7 +253,8 @@ void main() {
     });
 
     // (d) no provider in tree → SwipeActionCell works normally
-    testWidgets('SwipeActionCell works normally when no provider is in the tree',
+    testWidgets(
+        'SwipeActionCell works normally when no provider is in the tree',
         (tester) async {
       await tester.pumpWidget(
         Directionality(
@@ -300,7 +302,8 @@ void main() {
     });
 
     // (f) explicit groupController passed to provider is used
-    testWidgets('explicit groupController passed to provider is used', (tester) async {
+    testWidgets('explicit groupController passed to provider is used',
+        (tester) async {
       final group = SwipeGroupController();
       addTearDown(group.dispose);
 

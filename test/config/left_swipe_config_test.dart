@@ -15,7 +15,8 @@ void main() {
 
     test('actionPanelWidth <= 0 assertion fires with value in message', () {
       expect(
-        () => LeftSwipeConfig(mode: LeftSwipeMode.autoTrigger, actionPanelWidth: 0),
+        () => LeftSwipeConfig(
+            mode: LeftSwipeMode.autoTrigger, actionPanelWidth: 0),
         throwsA(isA<AssertionError>().having(
           (e) => e.message,
           'message',
@@ -31,7 +32,8 @@ void main() {
       expect(config.actionPanelWidth, isNull);
     });
 
-    test('reveal-mode with empty actions assertion fires with correct message', () {
+    test('reveal-mode with empty actions assertion fires with correct message',
+        () {
       expect(
         () => LeftSwipeConfig(
           mode: LeftSwipeMode.reveal,

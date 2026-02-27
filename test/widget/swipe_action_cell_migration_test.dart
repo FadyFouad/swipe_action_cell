@@ -4,11 +4,13 @@ import 'package:swipe_action_cell/swipe_action_cell.dart';
 
 void main() {
   group('SwipeActionCell Migration (US1)', () {
-    testWidgets('rightSwipeConfig fires callbacks identical to old API', (tester) async {
+    testWidgets('rightSwipeConfig fires callbacks identical to old API',
+        (tester) async {
       double? value;
       await tester.pumpWidget(MaterialApp(
         home: Scaffold(
-          body: SwipeActionCell(key: Key("cell1"), 
+          body: SwipeActionCell(
+            key: Key("cell1"),
             rightSwipeConfig: RightSwipeConfig(
               stepValue: 20,
               maxValue: 100,
@@ -22,17 +24,20 @@ void main() {
       // Simulate swipe to 30 (past step 20)
       final gesture = await tester.startGesture(const Offset(10, 10));
       await gesture.moveBy(const Offset(200, 0));
-      await gesture.up(); await tester.pumpAndSettle();
+      await gesture.up();
+      await tester.pumpAndSettle();
       await tester.pumpAndSettle();
 
       expect(value, greaterThan(0));
     });
 
-    testWidgets('leftSwipeConfig autoTrigger fires onActionTriggered', (tester) async {
+    testWidgets('leftSwipeConfig autoTrigger fires onActionTriggered',
+        (tester) async {
       bool triggered = false;
       await tester.pumpWidget(MaterialApp(
         home: Scaffold(
-          body: SwipeActionCell(key: Key("cell1"), 
+          body: SwipeActionCell(
+            key: Key("cell1"),
             leftSwipeConfig: LeftSwipeConfig(
               mode: LeftSwipeMode.autoTrigger,
               onActionTriggered: () => triggered = true,
@@ -45,7 +50,8 @@ void main() {
       // Simulate swipe left past threshold
       final gesture = await tester.startGesture(const Offset(300, 10));
       await gesture.moveBy(const Offset(-260, 0));
-      await gesture.up(); await tester.pumpAndSettle();
+      await gesture.up();
+      await tester.pumpAndSettle();
       await tester.pumpAndSettle();
 
       expect(triggered, isTrue);
@@ -54,7 +60,8 @@ void main() {
     testWidgets('visualConfig renders backgrounds', (tester) async {
       await tester.pumpWidget(MaterialApp(
         home: Scaffold(
-          body: SwipeActionCell(key: Key("cell1"), 
+          body: SwipeActionCell(
+            key: Key("cell1"),
             visualConfig: SwipeVisualConfig(
               leftBackground: (context, progress) => const Text('LEFT_BG'),
               rightBackground: (context, progress) => const Text('RIGHT_BG'),
@@ -72,7 +79,8 @@ void main() {
       // Reset and swipe left
       await tester.pumpWidget(MaterialApp(
         home: Scaffold(
-          body: SwipeActionCell(key: Key("cell2"), 
+          body: SwipeActionCell(
+            key: Key("cell2"),
             visualConfig: SwipeVisualConfig(
               leftBackground: (context, progress) => const Text('LEFT_BG'),
               rightBackground: (context, progress) => const Text('RIGHT_BG'),
@@ -86,7 +94,8 @@ void main() {
       expect(find.text('LEFT_BG'), findsOneWidget);
     });
 
-    testWidgets('(c) leftSwipeConfig reveal mode shows action panel after swipe',
+    testWidgets(
+        '(c) leftSwipeConfig reveal mode shows action panel after swipe',
         (tester) async {
       await tester.pumpWidget(MaterialApp(
         home: Scaffold(
@@ -103,8 +112,7 @@ void main() {
                 ),
               ],
             ),
-            child: const SizedBox(
-                width: 400, height: 100, child: Text('cell')),
+            child: const SizedBox(width: 400, height: 100, child: Text('cell')),
           ),
         ),
       ));
@@ -123,12 +131,14 @@ void main() {
       bool tapped = false;
       await tester.pumpWidget(MaterialApp(
         home: Scaffold(
-          body: SwipeActionCell(key: Key("cell1"),
+          body: SwipeActionCell(
+            key: Key("cell1"),
             enabled: false,
             rightSwipeConfig: RightSwipeConfig(stepValue: 20, maxValue: 100),
             child: GestureDetector(
               onTap: () => tapped = true,
-              child: const SizedBox(width: 400, height: 100, child: Text('cell')),
+              child:
+                  const SizedBox(width: 400, height: 100, child: Text('cell')),
             ),
           ),
         ),

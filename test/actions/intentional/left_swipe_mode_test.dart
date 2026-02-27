@@ -20,8 +20,7 @@ void main() {
     });
 
     test('toString includes enum name', () {
-      expect(LeftSwipeMode.autoTrigger.toString(),
-          contains('autoTrigger'));
+      expect(LeftSwipeMode.autoTrigger.toString(), contains('autoTrigger'));
       expect(LeftSwipeMode.reveal.toString(), contains('reveal'));
     });
   });

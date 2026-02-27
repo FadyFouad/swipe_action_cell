@@ -15,8 +15,7 @@ Widget withTheme(SwipeActionCellTheme theme, Widget child) {
 
 void main() {
   group('SwipeActionCellTheme widget inheritance (T026)', () {
-    testWidgets(
-        '(a) theme-provided gestureConfig used when no local override',
+    testWidgets('(a) theme-provided gestureConfig used when no local override',
         (tester) async {
       await tester.pumpWidget(withTheme(
         const SwipeActionCellTheme(
@@ -103,13 +102,12 @@ void main() {
         ),
       ));
 
-      final state1 = tester.state<SwipeActionCellState>(
-          find.byType(SwipeActionCell).first);
-      final state2 = tester
-          .state<SwipeActionCellState>(find.byType(SwipeActionCell).last);
+      final state1 = tester
+          .state<SwipeActionCellState>(find.byType(SwipeActionCell).first);
+      final state2 =
+          tester.state<SwipeActionCellState>(find.byType(SwipeActionCell).last);
 
-      expect(state1.effectiveAnimationConfig,
-          SwipeAnimationConfig.snappy());
+      expect(state1.effectiveAnimationConfig, SwipeAnimationConfig.snappy());
       expect(state2.effectiveAnimationConfig.activationThreshold, 0.5);
     });
   });

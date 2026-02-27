@@ -1,7 +1,6 @@
 import 'package:flutter/widgets.dart';
 import '../core/typedefs.dart';
 
-
 /// Configuration for the visual appearance and backgrounds of [SwipeActionCell].
 @immutable
 class SwipeVisualConfig {

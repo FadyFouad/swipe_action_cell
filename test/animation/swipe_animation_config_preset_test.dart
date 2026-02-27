@@ -3,10 +3,13 @@ import 'package:swipe_action_cell/swipe_action_cell.dart';
 
 void main() {
   group('SwipeAnimationConfig presets', () {
-    test('snappy().completionSpring.stiffness >= 2 * smooth().completionSpring.stiffness', () {
+    test(
+        'snappy().completionSpring.stiffness >= 2 * smooth().completionSpring.stiffness',
+        () {
       expect(
         SwipeAnimationConfig.snappy().completionSpring.stiffness,
-        greaterThanOrEqualTo(2 * SwipeAnimationConfig.smooth().completionSpring.stiffness),
+        greaterThanOrEqualTo(
+            2 * SwipeAnimationConfig.smooth().completionSpring.stiffness),
       );
     });
 
@@ -23,12 +26,21 @@ void main() {
     });
 
     test('presets are not equal to each other', () {
-      expect(SwipeAnimationConfig.snappy(), isNot(SwipeAnimationConfig.smooth()));
+      expect(
+          SwipeAnimationConfig.snappy(), isNot(SwipeAnimationConfig.smooth()));
     });
 
     test('both support copyWith', () {
-      expect(SwipeAnimationConfig.snappy().copyWith(activationThreshold: 0.5).activationThreshold, 0.5);
-      expect(SwipeAnimationConfig.smooth().copyWith(activationThreshold: 0.5).activationThreshold, 0.5);
+      expect(
+          SwipeAnimationConfig.snappy()
+              .copyWith(activationThreshold: 0.5)
+              .activationThreshold,
+          0.5);
+      expect(
+          SwipeAnimationConfig.smooth()
+              .copyWith(activationThreshold: 0.5)
+              .activationThreshold,
+          0.5);
     });
   });
 
@@ -56,8 +68,14 @@ void main() {
     });
 
     test('activationThreshold 0.0 and 1.0 pass', () {
-      expect(const SwipeAnimationConfig(activationThreshold: 0.0).activationThreshold, 0.0);
-      expect(const SwipeAnimationConfig(activationThreshold: 1.0).activationThreshold, 1.0);
+      expect(
+          const SwipeAnimationConfig(activationThreshold: 0.0)
+              .activationThreshold,
+          0.0);
+      expect(
+          const SwipeAnimationConfig(activationThreshold: 1.0)
+              .activationThreshold,
+          1.0);
     });
   });
 }

@@ -70,7 +70,8 @@ void main() {
       expect(() => group.unregister(c), returnsNormally); // not registered
       group.register(c);
       group.unregister(c);
-      expect(() => group.unregister(c), returnsNormally); // already unregistered
+      expect(
+          () => group.unregister(c), returnsNormally); // already unregistered
     });
 
     // (c) accordion: when A opens, B's close() is called
@@ -186,7 +187,9 @@ void main() {
     });
 
     // (j) dispose() removes all internal listeners without crashing registered controllers
-    test('dispose() removes all listeners without crashing registered controllers', () {
+    test(
+        'dispose() removes all listeners without crashing registered controllers',
+        () {
       // Use a local group so tearDown does not double-dispose.
       final localGroup = SwipeGroupController();
       final a = _idleController();

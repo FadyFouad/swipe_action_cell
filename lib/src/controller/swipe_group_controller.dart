@@ -46,6 +46,7 @@ class SwipeGroupController extends ChangeNotifier {
         closeAllExcept(controller);
       }
     }
+
     _listeners[controller] = listener;
     controller.addListener(listener);
   }

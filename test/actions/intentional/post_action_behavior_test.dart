@@ -8,7 +8,8 @@ void main() {
     });
 
     test('has animateOut value', () {
-      expect(PostActionBehavior.values, contains(PostActionBehavior.animateOut));
+      expect(
+          PostActionBehavior.values, contains(PostActionBehavior.animateOut));
     });
 
     test('has stay value', () {

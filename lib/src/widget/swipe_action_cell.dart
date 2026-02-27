@@ -21,6 +21,7 @@ import '../core/swipe_direction.dart';
 import '../core/swipe_progress.dart';
 import '../core/swipe_state.dart';
 import '../gesture/swipe_gesture_config.dart';
+import '../scroll/swipe_gesture_recognizer.dart';
 
 /// A widget that wraps any child and provides spring-based horizontal swipe
 /// interaction with asymmetric left/right semantics.
@@ -139,6 +140,9 @@ class SwipeActionCellState extends State<SwipeActionCell>
   /// True after the first swipe completes when [requireConfirmation] is true.
   bool _awaitingConfirmation = false;
 
+  // F007: scroll-position listener for close-on-scroll.
+  ScrollPosition? _scrollPosition;
+
   /// The resolved gesture config after applying the theme/local/default cascade.
   late SwipeGestureConfig effectiveGestureConfig;
 
@@ -173,6 +177,8 @@ class SwipeActionCellState extends State<SwipeActionCell>
       _effectiveController.attach(this);
     }
     _syncGroupRegistration();
+    // F007: attach to the nearest ancestor ScrollPosition.
+    _attachScrollListener();
   }
 
   void _resolveEffectiveConfigs() {
@@ -245,6 +251,8 @@ class SwipeActionCellState extends State<SwipeActionCell>
 
   @override
   void dispose() {
+    // F007: detach from scroll position.
+    _detachScrollListener();
     // F7: unregister from group and detach from controller before disposal.
     _registeredGroup?.unregister(_effectiveController);
     _effectiveController.detach(this);
@@ -557,6 +565,51 @@ class SwipeActionCellState extends State<SwipeActionCell>
     }
   }
 
+  /// Attaches to the nearest ancestor [ScrollPosition] to close on scroll.
+  void _attachScrollListener() {
+    final newPosition = Scrollable.maybeOf(context)?.position;
+    if (newPosition == _scrollPosition) return;
+    _detachScrollListener();
+    _scrollPosition = newPosition;
+    _scrollPosition?.addListener(_onScrollPositionChanged);
+  }
+
+  /// Detaches from the currently tracked [ScrollPosition].
+  void _detachScrollListener() {
+    _scrollPosition?.removeListener(_onScrollPositionChanged);
+    _scrollPosition = null;
+  }
+
+  /// Called on every scroll position change from the ancestor [Scrollable].
+  void _onScrollPositionChanged() {
+    if (!effectiveGestureConfig.closeOnScroll) return;
+    if (_state != SwipeState.revealed) return;
+    // isScrollingNotifier is true during user-initiated drags only.
+    // Programmatic scrolls (jumpTo, animateTo) do not set this flag.
+    if (_scrollPosition?.isScrollingNotifier.value == true) {
+      executeClose();
+    }
+  }
+
+  /// Builds the gesture recognizer map for [RawGestureDetector].
+  Map<Type, GestureRecognizerFactory> _buildGestureRecognizers(double width) {
+    return {
+      SwipeHorizontalRecognizer:
+          GestureRecognizerFactoryWithHandlers<SwipeHorizontalRecognizer>(
+        () => SwipeHorizontalRecognizer(debugOwner: this),
+        (instance) {
+          instance.thresholdRatio =
+              effectiveGestureConfig.horizontalThresholdRatio;
+          instance.respectEdgeGestures =
+              effectiveGestureConfig.respectEdgeGestures;
+          instance.onStart = _handleDragStart;
+          instance.onUpdate = (d) => _handleDragUpdate(d, width);
+          instance.onEnd = (d) => _handleDragEnd(d, width);
+        },
+      ),
+    };
+  }
+
   void _snapBack(double fromOffset, double velocity) {
     final spring = effectiveAnimationConfig.snapBackSpring;
     final simulation = SpringSimulation(
@@ -592,7 +645,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: _handleBodyTapInRevealedState,
-      child: SizedBox.expand(child: child),
+      child: child,
     );
   }
 
@@ -681,12 +734,9 @@ class SwipeActionCellState extends State<SwipeActionCell>
       builder: (context, constraints) {
         final width = constraints.maxWidth;
         _widgetWidth = width;
-        return GestureDetector(
+        return RawGestureDetector(
           behavior: HitTestBehavior.translucent,
-          onHorizontalDragStart: _handleDragStart,
-          onHorizontalDragUpdate: (details) =>
-              _handleDragUpdate(details, width),
-          onHorizontalDragEnd: (details) => _handleDragEnd(details, width),
+          gestures: _buildGestureRecognizers(width),
           child: _wrapWithClip(
             AnimatedBuilder(
               animation: _controller,

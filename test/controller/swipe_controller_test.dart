@@ -101,7 +101,8 @@ void main() {
 
     // (g) openLeft from non-idle is no-op in release; assert fires in debug
     test('openLeft() from non-idle state is a no-op in release mode', () {
-      controller.reportState(SwipeState.animatingToOpen, 0.0, SwipeDirection.left);
+      controller.reportState(
+          SwipeState.animatingToOpen, 0.0, SwipeDirection.left);
       // In debug mode this would throw AssertionError; in release it is no-op.
       bool threw = false;
       try {
@@ -139,7 +140,8 @@ void main() {
     tearDown(() => controller.dispose());
 
     // (i) openLeft with no handle is no-op; assert fires in debug
-    test('openLeft() with no handle attached is a no-op / asserts in debug', () {
+    test('openLeft() with no handle attached is a no-op / asserts in debug',
+        () {
       bool threw = false;
       try {
         controller.openLeft();
@@ -147,7 +149,8 @@ void main() {
         threw = true;
       }
       // Must not crash the process.
-      expect(threw || true, isTrue); // always passes — just checking no unhandled throw.
+      expect(threw || true,
+          isTrue); // always passes — just checking no unhandled throw.
     });
 
     // (j) attach when already attached fires debug assert
@@ -171,7 +174,9 @@ void main() {
     });
 
     // (l) controller can outlive widget — detach then command → no-op or assert
-    test('controller can outlive widget — detach then command does not crash process', () {
+    test(
+        'controller can outlive widget — detach then command does not crash process',
+        () {
       final h = _FakeHandle();
       controller.attach(h);
       controller.detach(h);
@@ -185,6 +190,7 @@ void main() {
           if (e is! AssertionError) rethrow;
         }
       }
+
       callSafely(() => controller.openLeft());
       callSafely(() => controller.openRight());
       callSafely(() => controller.resetProgress());
@@ -210,7 +216,8 @@ void main() {
     test('listener fires when state transitions to animatingToOpen', () {
       int fires = 0;
       controller.addListener(() => fires++);
-      controller.reportState(SwipeState.animatingToOpen, 0.0, SwipeDirection.left);
+      controller.reportState(
+          SwipeState.animatingToOpen, 0.0, SwipeDirection.left);
       expect(fires, greaterThan(0));
     });
 
@@ -218,7 +225,8 @@ void main() {
     test('listener fires when state transitions to idle', () {
       int fires = 0;
       // Move to non-idle to make a transition
-      controller.reportState(SwipeState.animatingToOpen, 0.0, SwipeDirection.left);
+      controller.reportState(
+          SwipeState.animatingToOpen, 0.0, SwipeDirection.left);
       controller.addListener(() => fires++);
       controller.reportState(SwipeState.idle, 0.0, null);
       expect(fires, greaterThan(0));
@@ -230,7 +238,8 @@ void main() {
       controller.addListener(() => fires1++);
       controller.addListener(() => fires2++);
       controller.addListener(() => fires3++);
-      controller.reportState(SwipeState.animatingToOpen, 0.0, SwipeDirection.left);
+      controller.reportState(
+          SwipeState.animatingToOpen, 0.0, SwipeDirection.left);
       expect(fires1, greaterThan(0));
       expect(fires2, greaterThan(0));
       expect(fires3, greaterThan(0));
@@ -257,7 +266,8 @@ void main() {
     });
 
     // (g) listener NOT fired when setProgress value is unchanged
-    test('listener NOT fired when setProgress value equals current progress', () {
+    test('listener NOT fired when setProgress value equals current progress',
+        () {
       // First call sets the value (fires listeners).
       controller.setProgress(3.0);
       int fires = 0;
