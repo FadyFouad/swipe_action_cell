@@ -123,6 +123,8 @@ Phase 4 (Polish):   F14 → F15 → F16 → F17
 - N/A (stateless config; no persistence) (004-intentional-action)
 - Dart >=3.4.0 <4.0.0 + Flutter SDK only (zero external runtime deps — Constitution IV) (005-config-api)
 - N/A (stateless config objects) (005-config-api)
+- Dart ≥ 3.4.0 / Flutter ≥ 3.22.0 + Flutter SDK only (zero external runtime deps — Constitution IV) (006-controller-group)
+- N/A (in-memory state only; no persistence) (006-controller-group)
 
 ## Recent Changes
 - 001-gesture-animation: Added Dart >=3.4.0 + Flutter SDK only (zero external runtime deps — Constitution IV)
