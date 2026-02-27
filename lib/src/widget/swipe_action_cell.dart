@@ -1003,8 +1003,13 @@ class SwipeActionCellState extends State<SwipeActionCell>
                         translatedChild,
                         if (_resolvedBackwardConfig?.mode ==
                                 LeftSwipeMode.reveal &&
-                            _state == SwipeState.revealed &&
-                            _resolvedBackwardConfig!.actions.isNotEmpty)
+                            _resolvedBackwardConfig!.actions.isNotEmpty &&
+                            offset < -1 &&
+                            (_state == SwipeState.revealed ||
+                                ((_state == SwipeState.dragging ||
+                                        _state ==
+                                            SwipeState.animatingToOpen) &&
+                                    _dragIsBackward)))
                           _buildRevealPanel(width),
                         if (_resolvedForwardConfig != null &&
                             _resolvedForwardConfig!.showProgressIndicator)
