@@ -593,8 +593,14 @@ class SwipeActionCellState extends State<SwipeActionCell>
         : _leftMaxTranslation(widgetWidth);
     if (maxT <= 0) return;
     final rawNewOffset = _controller.value + dx;
-    _controller.value = _applyResistance(
-        rawNewOffset, maxT, effectiveAnimationConfig.resistanceFactor);
+
+    // F003: Clamping logic for progressive-style reveal.
+    final resistance = (_lockedDirection == SwipeDirection.left &&
+            _resolvedBackwardConfig?.mode == LeftSwipeMode.reveal)
+        ? 0.0
+        : effectiveAnimationConfig.resistanceFactor;
+
+    _controller.value = _applyResistance(rawNewOffset, maxT, resistance);
   }
 
   void _handleDragEnd(DragEndDetails details, double widgetWidth) {
@@ -780,11 +786,13 @@ class SwipeActionCellState extends State<SwipeActionCell>
     final panelWidth =
         config.actionPanelWidth ?? 80.0 * config.actions.length.clamp(1, 3);
     final actions = config.actions.take(3).toList();
+    final currentWidth = _controller.value.abs().clamp(0.0, panelWidth);
+
     return Positioned(
       top: 0,
       bottom: 0,
       right: 0,
-      width: panelWidth,
+      width: currentWidth,
       child: SwipeActionPanel(
         actions: actions,
         panelWidth: panelWidth,
@@ -999,18 +1007,18 @@ class SwipeActionCellState extends State<SwipeActionCell>
                             effectiveVisualConfig.rightBackground != null)
                           Positioned.fill(
                               child: _buildBackground(context, progress)),
-                        if (confirmOverlay != null) confirmOverlay,
-                        translatedChild,
                         if (_resolvedBackwardConfig?.mode ==
                                 LeftSwipeMode.reveal &&
                             _resolvedBackwardConfig!.actions.isNotEmpty &&
-                            offset < -1 &&
+                            offset < -0.5 &&
                             (_state == SwipeState.revealed ||
                                 ((_state == SwipeState.dragging ||
                                         _state ==
                                             SwipeState.animatingToOpen) &&
                                     _dragIsBackward)))
                           _buildRevealPanel(width),
+                        if (confirmOverlay != null) confirmOverlay,
+                        translatedChild,
                         if (_resolvedForwardConfig != null &&
                             _resolvedForwardConfig!.showProgressIndicator)
                           _buildProgressIndicator(),
