@@ -1,5 +1,5 @@
+import '../../config/right_swipe_config.dart';
 import 'overflow_behavior.dart';
-import 'progressive_swipe_config.dart';
 
 /// Computes the next cumulative value after a successful right swipe.
 ///
@@ -7,7 +7,7 @@ import 'progressive_swipe_config.dart';
 /// whether [maxValue] was reached or exceeded.
 ({double nextValue, bool hitMax}) computeNextProgressiveValue({
   required double current,
-  required ProgressiveSwipeConfig config,
+  required RightSwipeConfig config,
 }) {
   final step = config.dynamicStep != null
       ? config.dynamicStep!(current)

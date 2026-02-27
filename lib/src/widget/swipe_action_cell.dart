@@ -3,35 +3,41 @@ import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
+import '../actions/intentional/left_swipe_mode.dart';
+import '../actions/intentional/post_action_behavior.dart';
+import '../actions/intentional/swipe_action_panel.dart';
+import '../actions/progressive/progressive_swipe_indicator.dart';
+import '../actions/progressive/progressive_value_logic.dart';
+import '../animation/swipe_animation_config.dart';
 import '../config/left_swipe_config.dart';
 import '../config/right_swipe_config.dart';
 import '../config/swipe_action_cell_theme.dart';
 import '../config/swipe_visual_config.dart';
 import '../controller/swipe_controller.dart';
-import '../actions/intentional/left_swipe_mode.dart';
-import '../actions/intentional/post_action_behavior.dart';
-import '../actions/intentional/swipe_action_panel.dart';
-
-import '../actions/progressive/progressive_swipe_config.dart';
-import '../actions/progressive/progressive_swipe_indicator.dart';
-import '../actions/progressive/progressive_value_logic.dart';
-import '../animation/swipe_animation_config.dart';
 import '../core/swipe_direction.dart';
 import '../core/swipe_progress.dart';
 import '../core/swipe_state.dart';
-
 import '../gesture/swipe_gesture_config.dart';
 
-/// A widget that wraps any child and provides spring-based horizontal swipe interaction.
+/// A widget that wraps any child and provides spring-based horizontal swipe
+/// interaction with asymmetric left/right semantics.
 class SwipeActionCell extends StatefulWidget {
   /// Creates a [SwipeActionCell].
+  ///
+  /// Only [child] is required. All config parameters default to `null`,
+  /// which either falls through to a [SwipeActionCellTheme] in the widget
+  /// tree or to the package's built-in defaults.
+  ///
+  /// Passing `null` for [rightSwipeConfig] or [leftSwipeConfig] completely
+  /// disables that swipe direction — no gesture recognition, no visual
+  /// feedback, no callbacks fired.
   const SwipeActionCell({
     super.key,
     required this.child,
-    this.gestureConfig,
-    this.animationConfig,
     this.rightSwipeConfig,
     this.leftSwipeConfig,
+    this.gestureConfig,
+    this.animationConfig,
     this.visualConfig,
     this.controller,
     this.enabled = true,
@@ -42,25 +48,45 @@ class SwipeActionCell extends StatefulWidget {
   /// The widget displayed inside the swipe cell.
   final Widget child;
 
+  /// Configuration for right-swipe progressive (incremental) action behavior.
+  ///
+  /// When `null` and no [SwipeActionCellTheme] provides a value, right-swipe
+  /// progressive behavior is disabled entirely — zero overhead.
+  final RightSwipeConfig? rightSwipeConfig;
+
+  /// Configuration for left-swipe intentional (one-shot or reveal) behavior.
+  ///
+  /// When `null` and no [SwipeActionCellTheme] provides a value, left-swipe
+  /// intentional behavior is disabled entirely — zero overhead.
+  final LeftSwipeConfig? leftSwipeConfig;
+
   /// Configuration for gesture recognition behavior.
+  ///
+  /// When `null`, uses [SwipeActionCellTheme.gestureConfig] if present,
+  /// otherwise falls back to [SwipeGestureConfig] defaults.
   final SwipeGestureConfig? gestureConfig;
 
   /// Configuration for animation physics.
+  ///
+  /// When `null`, uses [SwipeActionCellTheme.animationConfig] if present,
+  /// otherwise falls back to [SwipeAnimationConfig] defaults.
   final SwipeAnimationConfig? animationConfig;
 
-  /// Configuration for right-swipe progressive action behavior.
-  final RightSwipeConfig? rightSwipeConfig;
-
-  /// Configuration for left-swipe intentional action behavior.
-  final LeftSwipeConfig? leftSwipeConfig;
-
-  /// Configuration for the visual appearance and backgrounds.
+  /// Configuration for visual presentation (backgrounds, clip, border radius).
+  ///
+  /// When `null`, uses [SwipeActionCellTheme.visualConfig] if present,
+  /// otherwise no backgrounds, hard-edge clip, no border radius.
   final SwipeVisualConfig? visualConfig;
 
-  /// Controller for programmatic interaction.
+  /// External controller for programmatic swipe operations.
+  ///
+  /// Accepted and stored but has no effect in this release. Reserved for F007.
   final SwipeController? controller;
 
   /// Whether swipe interactions are active.
+  ///
+  /// When `false`, all gesture recognition is bypassed and touch events pass
+  /// through to the child unchanged.
   final bool enabled;
 
   /// Called whenever the swipe state machine transitions to a new state.
@@ -73,6 +99,9 @@ class SwipeActionCell extends StatefulWidget {
   State<SwipeActionCell> createState() => SwipeActionCellState();
 }
 
+/// Mutable state for [SwipeActionCell].
+///
+/// Exposed for testing via `tester.state<SwipeActionCellState>(...)`.
 class SwipeActionCellState extends State<SwipeActionCell>
     with TickerProviderStateMixin {
   late final AnimationController _controller;
@@ -95,12 +124,27 @@ class SwipeActionCellState extends State<SwipeActionCell>
   /// True after the first swipe completes when [requireConfirmation] is true.
   bool _awaitingConfirmation = false;
 
-  // Effective configurations.
+  /// The resolved gesture config after applying the theme/local/default cascade.
   late SwipeGestureConfig effectiveGestureConfig;
+
+  /// The resolved animation config after applying the theme/local/default cascade.
   late SwipeAnimationConfig effectiveAnimationConfig;
+
+  /// The resolved right-swipe config, or `null` if right-swipe is disabled.
   RightSwipeConfig? effectiveRightSwipeConfig;
+
+  /// The resolved left-swipe config, or `null` if left-swipe is disabled.
   LeftSwipeConfig? effectiveLeftSwipeConfig;
+
+  /// The resolved visual config after applying the theme/local/default cascade.
   late SwipeVisualConfig effectiveVisualConfig;
+
+  /// A [ValueListenable] that emits the current swipe offset on every frame.
+  ValueListenable<double> get swipeOffsetListenable => _controller;
+
+  /// The current accumulated progressive value, or `null` when right-swipe
+  /// is disabled.
+  ValueNotifier<double>? get progressValueNotifier => _progressValueNotifier;
 
   @override
   void didChangeDependencies() {
@@ -112,7 +156,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
   }
 
   void _resolveEffectiveConfigs() {
-    final theme = SwipeActionCellTheme.of(context);
+    final theme = SwipeActionCellTheme.maybeOf(context);
     effectiveGestureConfig = widget.gestureConfig ??
         theme?.gestureConfig ??
         const SwipeGestureConfig();
@@ -125,9 +169,6 @@ class SwipeActionCellState extends State<SwipeActionCell>
     effectiveVisualConfig =
         widget.visualConfig ?? theme?.visualConfig ?? const SwipeVisualConfig();
   }
-
-  ValueListenable<double> get swipeOffsetListenable => _controller;
-  ValueNotifier<double>? get progressValueNotifier => _progressValueNotifier;
 
   @override
   void initState() {
@@ -144,7 +185,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
   void _initProgressiveNotifier() {
     final config = effectiveRightSwipeConfig;
     if (config != null) {
-      _progressValueNotifier = ValueNotifier(config.initialValue ?? config.minValue);
+      _progressValueNotifier = ValueNotifier(config.initialValue);
     }
   }
 
@@ -227,7 +268,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
     }
   }
 
-  void _applyIntentionalAction() { 
+  void _applyIntentionalAction() {
     final config = effectiveLeftSwipeConfig!;
     _awaitingConfirmation = false;
     if (config.enableHaptic) HapticFeedback.mediumImpact();
@@ -268,7 +309,8 @@ class SwipeActionCellState extends State<SwipeActionCell>
   double _leftMaxTranslation(double widgetWidth) {
     final config = effectiveLeftSwipeConfig;
     if (config?.mode == LeftSwipeMode.reveal && config!.actions.isNotEmpty) {
-      return config.actionPanelWidth;
+      return config.actionPanelWidth ??
+          80.0 * config.actions.length.clamp(1, 3);
     }
     return effectiveAnimationConfig.maxTranslationLeft ?? widgetWidth * 0.6;
   }
@@ -276,21 +318,15 @@ class SwipeActionCellState extends State<SwipeActionCell>
   void _applyProgressiveIncrement() {
     final config = effectiveRightSwipeConfig!;
     final current = _progressValueNotifier!.value;
-
-    final oldConfigBridge = ProgressiveSwipeConfig(
-      stepValue: config.stepValue,
-      minValue: config.minValue,
-      maxValue: config.maxValue,
-      progressIndicatorConfig: config.indicatorConfig,
-      overflowBehavior: config.overflowBehavior,
-    );
-
     final result =
-        computeNextProgressiveValue(current: current, config: oldConfigBridge);
+        computeNextProgressiveValue(current: current, config: config);
 
     if (result.nextValue != current) {
       _progressValueNotifier!.value = result.nextValue;
       config.onProgressChanged?.call(result.nextValue, current);
+    }
+    if (result.hitMax) {
+      config.onMaxReached?.call();
     }
     if (config.enableHaptic) HapticFeedback.mediumImpact();
     config.onSwipeCompleted?.call(result.nextValue);
@@ -340,7 +376,9 @@ class SwipeActionCellState extends State<SwipeActionCell>
     if (_lockedDirection == SwipeDirection.none) {
       _accumulatedDx += dx;
       if (_accumulatedDx.abs() < effectiveGestureConfig.deadZone &&
-          _controller.value == 0.0) return;
+          _controller.value == 0.0) {
+        return;
+      }
       if (_controller.value != 0.0 ||
           _accumulatedDx.abs() >= effectiveGestureConfig.deadZone) {
         final rawNewOffset = _controller.value + _accumulatedDx;
@@ -432,7 +470,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
     _controller.animateWith(simulation);
   }
 
-  Widget _maybeWrapWithBodyTapInterceptor(Widget child) { 
+  Widget _maybeWrapWithBodyTapInterceptor(Widget child) {
     if (_state != SwipeState.revealed || effectiveLeftSwipeConfig == null) {
       return child;
     }
@@ -443,14 +481,17 @@ class SwipeActionCellState extends State<SwipeActionCell>
     );
   }
 
-  void _handleBodyTapInRevealedState() { 
+  void _handleBodyTapInRevealedState() {
     _awaitingConfirmation = false;
     _updateState(SwipeState.animatingToClose);
     _snapBack(_controller.value, 0.0);
   }
 
   Widget _buildBackground(BuildContext context, SwipeProgress progress) {
-    if (!effectiveGestureConfig.enabledDirections.contains(progress.direction)) return const SizedBox.shrink(); final builder = progress.direction == SwipeDirection.right
+    if (!effectiveGestureConfig.enabledDirections.contains(progress.direction)) {
+      return const SizedBox.shrink();
+    }
+    final builder = progress.direction == SwipeDirection.right
         ? effectiveVisualConfig.rightBackground
         : effectiveVisualConfig.leftBackground;
     if (builder == null) return const SizedBox.shrink();
@@ -459,18 +500,22 @@ class SwipeActionCellState extends State<SwipeActionCell>
 
   Widget _buildProgressIndicator() {
     final config = effectiveRightSwipeConfig!;
+    final indicatorConfig = config.progressIndicatorConfig;
     return Positioned(
       top: 0,
       bottom: 0,
       left: 0,
-      width: config.indicatorConfig.width,
+      width: indicatorConfig?.width,
       child: RepaintBoundary(
         child: ValueListenableBuilder<double>(
           valueListenable: _progressValueNotifier!,
           builder: (context, value, _) {
-            final fillRatio = (value / config.maxValue).clamp(0.0, 1.0);
+            final fillRatio = config.maxValue.isFinite
+                ? (value / config.maxValue).clamp(0.0, 1.0)
+                : 0.0;
+            if (indicatorConfig == null) return const SizedBox.shrink();
             return ProgressiveSwipeIndicator(
-                fillRatio: fillRatio, config: config.indicatorConfig);
+                fillRatio: fillRatio, config: indicatorConfig);
           },
         ),
       ),
@@ -479,7 +524,8 @@ class SwipeActionCellState extends State<SwipeActionCell>
 
   Widget _buildRevealPanel(double widgetWidth) {
     final config = effectiveLeftSwipeConfig!;
-    final panelWidth = config.actionPanelWidth;
+    final panelWidth = config.actionPanelWidth ??
+        80.0 * config.actions.length.clamp(1, 3);
     final actions = config.actions.take(3).toList();
     return Positioned(
       top: 0,
@@ -578,7 +624,8 @@ class SwipeActionCellState extends State<SwipeActionCell>
                         _state == SwipeState.revealed &&
                         effectiveLeftSwipeConfig!.actions.isNotEmpty)
                       _buildRevealPanel(width),
-                    if (effectiveRightSwipeConfig != null)
+                    if (effectiveRightSwipeConfig != null &&
+                        effectiveRightSwipeConfig!.showProgressIndicator)
                       _buildProgressIndicator(),
                   ],
                 );

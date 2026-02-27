@@ -1,31 +1,37 @@
 import 'package:flutter/material.dart';
-
-import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:swipe_action_cell/swipe_action_cell.dart';
 
 void main() {
   group('LeftSwipeConfig', () {
-    test('const constructability', () {
+    test('const constructability with required mode', () {
       const config = LeftSwipeConfig(
         mode: LeftSwipeMode.autoTrigger,
-        onActionTriggered: null,
       );
       expect(config.mode, LeftSwipeMode.autoTrigger);
+      expect(config.actionPanelWidth, isNull);
+      expect(config.enableHaptic, false);
     });
 
-    test('actionPanelWidth <= 0 assertion fires', () {
+    test('actionPanelWidth <= 0 assertion fires with value in message', () {
       expect(
-        () => LeftSwipeConfig(actionPanelWidth: 0),
+        () => LeftSwipeConfig(mode: LeftSwipeMode.autoTrigger, actionPanelWidth: 0),
         throwsA(isA<AssertionError>().having(
           (e) => e.message,
           'message',
-          contains('actionPanelWidth must be > 0'),
+          allOf(contains('actionPanelWidth must be > 0'), contains('0')),
         )),
       );
     });
 
-    test('reveal-mode with empty actions assertion fires', () {
+    test('null actionPanelWidth passes without assertion', () {
+      const config = LeftSwipeConfig(
+        mode: LeftSwipeMode.autoTrigger,
+      );
+      expect(config.actionPanelWidth, isNull);
+    });
+
+    test('reveal-mode with empty actions assertion fires with correct message', () {
       expect(
         () => LeftSwipeConfig(
           mode: LeftSwipeMode.reveal,
@@ -43,7 +49,9 @@ void main() {
       final config = LeftSwipeConfig(
         mode: LeftSwipeMode.reveal,
         actions: [
-          SwipeAction(backgroundColor: Color(0xFFE53935), foregroundColor: Color(0xFFFFFFFF), 
+          SwipeAction(
+            backgroundColor: const Color(0xFFE53935),
+            foregroundColor: const Color(0xFFFFFFFF),
             icon: const Icon(Icons.archive),
             onTap: () {},
           ),
@@ -63,6 +71,16 @@ void main() {
     test('copyWith no-arg equality', () {
       const config = LeftSwipeConfig(mode: LeftSwipeMode.autoTrigger);
       expect(config.copyWith(), config);
+    });
+
+    test('copyWith with args changes only specified fields', () {
+      const config = LeftSwipeConfig(
+        mode: LeftSwipeMode.autoTrigger,
+        requireConfirmation: false,
+      );
+      final updated = config.copyWith(requireConfirmation: true);
+      expect(updated.requireConfirmation, isTrue);
+      expect(updated.mode, LeftSwipeMode.autoTrigger);
     });
   });
 }

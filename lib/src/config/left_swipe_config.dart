@@ -1,17 +1,23 @@
 import 'package:flutter/foundation.dart';
+
 import '../actions/intentional/left_swipe_mode.dart';
 import '../actions/intentional/post_action_behavior.dart';
 import '../actions/intentional/swipe_action.dart';
 
-
 /// Configuration for left-swipe intentional (one-shot) action behavior.
+///
+/// Pass as [SwipeActionCell.leftSwipeConfig] to enable left-swipe intentional
+/// semantics. When `null`, left-swipe intentional behavior is disabled entirely.
+///
+/// Renamed from `IntentionalSwipeConfig` in F005. A new debug assertion has been
+/// added for reveal mode with an empty [actions] list.
 @immutable
 class LeftSwipeConfig {
-  /// Creates a configuration for left-swipe intentional actions.
+  /// Creates a [LeftSwipeConfig].
   const LeftSwipeConfig({
-    this.mode = LeftSwipeMode.autoTrigger,
+    required this.mode,
     this.actions = const [],
-    this.actionPanelWidth = 240.0,
+    this.actionPanelWidth,
     this.postActionBehavior = PostActionBehavior.snapBack,
     this.requireConfirmation = false,
     this.enableHaptic = false,
@@ -19,42 +25,53 @@ class LeftSwipeConfig {
     this.onSwipeCancelled,
     this.onPanelOpened,
     this.onPanelClosed,
-  })  : assert(actionPanelWidth > 0,
-            'LeftSwipeConfig: actionPanelWidth must be > 0, got $actionPanelWidth'),
-        assert(mode != LeftSwipeMode.reveal || actions.length > 0,
-            'LeftSwipeConfig in reveal mode requires at least one action, but actions is empty.');
+  })  : assert(
+          actionPanelWidth == null || actionPanelWidth > 0,
+          'actionPanelWidth must be > 0 when provided, got $actionPanelWidth',
+        ),
+        assert(
+          mode != LeftSwipeMode.reveal || actions.length > 0,
+          'LeftSwipeConfig in reveal mode requires at least one action, '
+          'but actions is empty.',
+        );
 
-  /// The interaction model for the left swipe.
+  /// The interaction mode: [LeftSwipeMode.autoTrigger] or [LeftSwipeMode.reveal].
   final LeftSwipeMode mode;
 
-  /// The list of actions to show in reveal mode.
+  /// The action buttons displayed in the panel. Used only in [LeftSwipeMode.reveal].
+  ///
+  /// Must contain 1–3 [SwipeAction] items when mode is [LeftSwipeMode.reveal].
+  /// More than 3 items: only the first 3 are rendered.
   final List<SwipeAction> actions;
 
-  /// The fixed width of the action panel in reveal mode.
-  final double actionPanelWidth;
+  /// The width of the action panel in logical pixels. Used only in
+  /// [LeftSwipeMode.reveal]. When `null`, auto-calculated from action count.
+  final double? actionPanelWidth;
 
-  /// How the cell behaves after an action is triggered.
+  /// What the cell does after an auto-trigger action fires.
+  /// Used only in [LeftSwipeMode.autoTrigger].
   final PostActionBehavior postActionBehavior;
 
-  /// Whether a second swipe or background tap is required to confirm.
+  /// Whether a second gesture (or background-area tap) is required to confirm
+  /// the action. Used only in [LeftSwipeMode.autoTrigger].
   final bool requireConfirmation;
 
-  /// Whether to trigger haptic feedback at key interaction milestones.
+  /// Whether haptic feedback fires at swipe milestones.
   final bool enableHaptic;
 
-  /// Callback when a one-shot action is triggered (autoTrigger mode).
+  /// Called when an auto-trigger action fires successfully.
   final VoidCallback? onActionTriggered;
 
-  /// Callback when the swipe is cancelled before activation.
+  /// Called when a left swipe is released below the activation threshold.
   final VoidCallback? onSwipeCancelled;
 
-  /// Callback when the reveal panel is opened.
+  /// Called when the reveal panel opens and the animation settles.
   final VoidCallback? onPanelOpened;
 
-  /// Callback when the reveal panel is closed.
+  /// Called when the reveal panel closes (any trigger).
   final VoidCallback? onPanelClosed;
 
-  /// Creates a copy of this configuration with the given fields replaced.
+  /// Returns a copy with the specified fields replaced.
   LeftSwipeConfig copyWith({
     LeftSwipeMode? mode,
     List<SwipeAction>? actions,
@@ -98,15 +115,16 @@ class LeftSwipeConfig {
           onPanelClosed == other.onPanelClosed;
 
   @override
-  int get hashCode =>
-      mode.hashCode ^
-      actions.hashCode ^
-      actionPanelWidth.hashCode ^
-      postActionBehavior.hashCode ^
-      requireConfirmation.hashCode ^
-      enableHaptic.hashCode ^
-      onActionTriggered.hashCode ^
-      onSwipeCancelled.hashCode ^
-      onPanelOpened.hashCode ^
-      onPanelClosed.hashCode;
+  int get hashCode => Object.hashAll([
+        mode,
+        actions,
+        actionPanelWidth,
+        postActionBehavior,
+        requireConfirmation,
+        enableHaptic,
+        onActionTriggered,
+        onSwipeCancelled,
+        onPanelOpened,
+        onPanelClosed,
+      ]);
 }

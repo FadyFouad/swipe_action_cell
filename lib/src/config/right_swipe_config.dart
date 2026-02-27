@@ -1,93 +1,123 @@
 import 'package:flutter/foundation.dart';
-import '../core/typedefs.dart';
+import 'package:flutter/widgets.dart';
+
 import '../actions/progressive/overflow_behavior.dart';
 import '../actions/progressive/progress_indicator_config.dart';
+import '../core/typedefs.dart';
 
-/// Configuration for right-swipe progressive action behavior.
+/// Configuration for right-swipe progressive (incremental) action behavior.
+///
+/// Pass as [SwipeActionCell.rightSwipeConfig] to enable progressive right-swipe
+/// semantics. When `null`, right-swipe progressive behavior is disabled entirely.
+///
+/// Renamed from `ProgressiveSwipeConfig` in F005. All fields and semantics are
+/// preserved.
 @immutable
 class RightSwipeConfig {
-  /// Creates a configuration for right-swipe progressive actions.
+  /// Creates a [RightSwipeConfig].
   const RightSwipeConfig({
-    required this.stepValue,
-    this.minValue = 0.0,
-    required this.maxValue,
-    this.initialValue,
     this.value,
-    this.onSwipeCompleted,
-    this.onSwipeStarted,
-    this.onSwipeCancelled,
-    this.onProgressChanged,
-    this.indicatorConfig = const ProgressIndicatorConfig(),
+    this.initialValue = 0.0,
+    this.stepValue = 1.0,
+    this.maxValue = double.infinity,
+    this.minValue = 0.0,
     this.overflowBehavior = OverflowBehavior.clamp,
-    this.enableHaptic = true,
-  })  : assert(stepValue > 0, 'RightSwipeConfig: stepValue must be > 0, got $stepValue'),
-        assert(minValue < maxValue,
-            'RightSwipeConfig: minValue must be < maxValue, got minValue=$minValue, maxValue=$maxValue');
+    this.dynamicStep,
+    this.showProgressIndicator = false,
+    this.progressIndicatorConfig,
+    this.enableHaptic = false,
+    this.onProgressChanged,
+    this.onMaxReached,
+    this.onSwipeStarted,
+    this.onSwipeCompleted,
+    this.onSwipeCancelled,
+  })  : assert(stepValue > 0.0, 'stepValue must be > 0, got $stepValue'),
+        assert(
+          minValue < maxValue,
+          'minValue ($minValue) must be < maxValue ($maxValue)',
+        );
 
-  /// The increment value for each step of the swipe.
-  final double stepValue;
-
-  /// The minimum value the swipe can reach (default 0.0).
-  final double minValue;
-
-  /// The maximum value the swipe can reach.
-  final double maxValue;
-
-  /// Optional initial value when first rendered.
-  final double? initialValue;
-
-  /// Optional controlled value.
+  /// The externally-managed progress value (controlled mode).
   final double? value;
 
-  /// Callback when the swipe is completed (released past a step).
-  final ValueChanged<double>? onSwipeCompleted;
+  /// The initial cumulative value in uncontrolled mode.
+  final double initialValue;
 
-  /// Callback when the swipe starts.
-  final VoidCallback? onSwipeStarted;
+  /// The fixed amount added on each successful swipe. Must be > 0.
+  final double stepValue;
 
-  /// Callback when the swipe is cancelled (released before a step).
-  final VoidCallback? onSwipeCancelled;
+  /// The upper bound for the cumulative value.
+  final double maxValue;
 
-  /// Callback when the swipe progress changes.
-  final ProgressChangeCallback? onProgressChanged;
+  /// The lower bound and wrap-target for the cumulative value.
+  final double minValue;
 
-  /// Configuration for the visual progress indicator.
-  final ProgressIndicatorConfig indicatorConfig;
-
-  /// How the swipe behaves when dragged past [maxValue].
+  /// How to handle a step that would push the value beyond [maxValue].
   final OverflowBehavior overflowBehavior;
 
-  /// Whether to trigger haptic feedback at key interaction milestones.
+  /// A callback that returns the step size for the next swipe.
+  final DynamicStepCallback? dynamicStep;
+
+  /// Whether to render a persistent progress bar.
+  final bool showProgressIndicator;
+
+  /// Appearance configuration for the progress indicator.
+  final ProgressIndicatorConfig? progressIndicatorConfig;
+
+  /// Whether haptic feedback fires at swipe milestones.
   final bool enableHaptic;
 
-  /// Creates a copy of this configuration with the given fields replaced.
+  /// Called when the cumulative value changes.
+  final ProgressChangeCallback? onProgressChanged;
+
+  /// Called when the value reaches or would exceed [maxValue].
+  final VoidCallback? onMaxReached;
+
+  /// Called when the right-swipe direction is locked.
+  final VoidCallback? onSwipeStarted;
+
+  /// Called after a successful swipe animation settles.
+  final ValueChanged<double>? onSwipeCompleted;
+
+  /// Called when a right swipe is released below the activation threshold.
+  final VoidCallback? onSwipeCancelled;
+
+  /// Returns a copy with the specified fields replaced.
   RightSwipeConfig copyWith({
-    double? stepValue,
-    double? minValue,
-    double? maxValue,
-    double? initialValue,
     double? value,
-    ValueChanged<double>? onSwipeCompleted,
-    VoidCallback? onSwipeStarted,
-    VoidCallback? onSwipeCancelled,
-    ProgressChangeCallback? onProgressChanged,
-    ProgressIndicatorConfig? indicatorConfig,
+    double? initialValue,
+    double? stepValue,
+    double? maxValue,
+    double? minValue,
     OverflowBehavior? overflowBehavior,
+    DynamicStepCallback? dynamicStep,
+    bool? showProgressIndicator,
+    ProgressIndicatorConfig? progressIndicatorConfig,
     bool? enableHaptic,
+    ProgressChangeCallback? onProgressChanged,
+    VoidCallback? onMaxReached,
+    VoidCallback? onSwipeStarted,
+    ValueChanged<double>? onSwipeCompleted,
+    VoidCallback? onSwipeCancelled,
   }) {
     return RightSwipeConfig(
-      stepValue: stepValue ?? this.stepValue,
-      minValue: minValue ?? this.minValue,
-      maxValue: maxValue ?? this.maxValue,
-      initialValue: initialValue ?? this.initialValue,
       value: value ?? this.value,
-      onSwipeCompleted: onSwipeCompleted ?? this.onSwipeCompleted,
-      onSwipeStarted: onSwipeStarted ?? this.onSwipeStarted,
-      onSwipeCancelled: onSwipeCancelled ?? this.onSwipeCancelled,
-      onProgressChanged: onProgressChanged ?? this.onProgressChanged,
-      indicatorConfig: indicatorConfig ?? this.indicatorConfig,
+      initialValue: initialValue ?? this.initialValue,
+      stepValue: stepValue ?? this.stepValue,
+      maxValue: maxValue ?? this.maxValue,
+      minValue: minValue ?? this.minValue,
       overflowBehavior: overflowBehavior ?? this.overflowBehavior,
+      dynamicStep: dynamicStep ?? this.dynamicStep,
+      showProgressIndicator:
+          showProgressIndicator ?? this.showProgressIndicator,
+      progressIndicatorConfig:
+          progressIndicatorConfig ?? this.progressIndicatorConfig,
       enableHaptic: enableHaptic ?? this.enableHaptic,
+      onProgressChanged: onProgressChanged ?? this.onProgressChanged,
+      onMaxReached: onMaxReached ?? this.onMaxReached,
+      onSwipeStarted: onSwipeStarted ?? this.onSwipeStarted,
+      onSwipeCompleted: onSwipeCompleted ?? this.onSwipeCompleted,
+      onSwipeCancelled: onSwipeCancelled ?? this.onSwipeCancelled,
     );
   }
 
@@ -96,31 +126,38 @@ class RightSwipeConfig {
       identical(this, other) ||
       other is RightSwipeConfig &&
           runtimeType == other.runtimeType &&
-          stepValue == other.stepValue &&
-          minValue == other.minValue &&
-          maxValue == other.maxValue &&
-          initialValue == other.initialValue &&
           value == other.value &&
-          onSwipeCompleted == other.onSwipeCompleted &&
-          onSwipeStarted == other.onSwipeStarted &&
-          onSwipeCancelled == other.onSwipeCancelled &&
-          onProgressChanged == other.onProgressChanged &&
-          indicatorConfig == other.indicatorConfig &&
+          initialValue == other.initialValue &&
+          stepValue == other.stepValue &&
+          maxValue == other.maxValue &&
+          minValue == other.minValue &&
           overflowBehavior == other.overflowBehavior &&
-          enableHaptic == other.enableHaptic;
+          dynamicStep == other.dynamicStep &&
+          showProgressIndicator == other.showProgressIndicator &&
+          progressIndicatorConfig == other.progressIndicatorConfig &&
+          enableHaptic == other.enableHaptic &&
+          onProgressChanged == other.onProgressChanged &&
+          onMaxReached == other.onMaxReached &&
+          onSwipeStarted == other.onSwipeStarted &&
+          onSwipeCompleted == other.onSwipeCompleted &&
+          onSwipeCancelled == other.onSwipeCancelled;
 
   @override
-  int get hashCode =>
-      stepValue.hashCode ^
-      minValue.hashCode ^
-      maxValue.hashCode ^
-      initialValue.hashCode ^
-      value.hashCode ^
-      onSwipeCompleted.hashCode ^
-      onSwipeStarted.hashCode ^
-      onSwipeCancelled.hashCode ^
-      onProgressChanged.hashCode ^
-      indicatorConfig.hashCode ^
-      overflowBehavior.hashCode ^
-      enableHaptic.hashCode;
+  int get hashCode => Object.hashAll([
+        value,
+        initialValue,
+        stepValue,
+        maxValue,
+        minValue,
+        overflowBehavior,
+        dynamicStep,
+        showProgressIndicator,
+        progressIndicatorConfig,
+        enableHaptic,
+        onProgressChanged,
+        onMaxReached,
+        onSwipeStarted,
+        onSwipeCompleted,
+        onSwipeCancelled,
+      ]);
 }
