@@ -1,8 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/physics.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
+import '../accessibility/swipe_semantic_config.dart';
 import '../actions/intentional/left_swipe_mode.dart';
 import '../actions/intentional/post_action_behavior.dart';
 import '../actions/intentional/swipe_action_panel.dart';
@@ -18,6 +20,7 @@ import '../controller/swipe_controller.dart';
 import '../controller/swipe_controller_provider.dart';
 import '../controller/swipe_group_controller.dart';
 import '../core/swipe_direction.dart';
+import '../core/swipe_direction_resolver.dart';
 import '../core/swipe_progress.dart';
 import '../core/swipe_state.dart';
 import '../gesture/swipe_gesture_config.dart';
@@ -40,6 +43,10 @@ class SwipeActionCell extends StatefulWidget {
     required this.child,
     this.rightSwipeConfig,
     this.leftSwipeConfig,
+    this.forwardSwipeConfig,
+    this.backwardSwipeConfig,
+    this.forceDirection = ForceDirection.auto,
+    this.semanticConfig,
     this.gestureConfig,
     this.animationConfig,
     this.visualConfig,
@@ -63,6 +70,38 @@ class SwipeActionCell extends StatefulWidget {
   /// When `null` and no [SwipeActionCellTheme] provides a value, left-swipe
   /// intentional behavior is disabled entirely — zero overhead.
   final LeftSwipeConfig? leftSwipeConfig;
+
+  /// Semantic alias for right-swipe config (LTR) / left-swipe config (RTL).
+  ///
+  /// Use this when you want the same configuration to work correctly as the
+  /// "forward" (progressive) action in both LTR and RTL layouts. Takes
+  /// precedence over [rightSwipeConfig].
+  ///
+  /// When null, falls back to [rightSwipeConfig].
+  final RightSwipeConfig? forwardSwipeConfig;
+
+  /// Semantic alias for left-swipe config (LTR) / right-swipe config (RTL).
+  ///
+  /// Use this when you want the same configuration to work correctly as the
+  /// "backward" (intentional) action in both LTR and RTL layouts. Takes
+  /// precedence over [leftSwipeConfig].
+  ///
+  /// When null, falls back to [leftSwipeConfig].
+  final LeftSwipeConfig? backwardSwipeConfig;
+
+  /// Manual override for direction resolution.
+  ///
+  /// Defaults to [ForceDirection.auto], which reads [Directionality.of(context)].
+  /// Set to [ForceDirection.ltr] or [ForceDirection.rtl] to force a specific
+  /// layout direction regardless of the ambient [Directionality].
+  final ForceDirection forceDirection;
+
+  /// Accessibility labels and announcement configuration.
+  ///
+  /// When null, all labels use direction-adaptive defaults. When provided,
+  /// any null field within this config also falls back to direction-adaptive
+  /// defaults.
+  final SwipeSemanticConfig? semanticConfig;
 
   /// Configuration for gesture recognition behavior.
   ///
@@ -143,6 +182,31 @@ class SwipeActionCellState extends State<SwipeActionCell>
   // F007: scroll-position listener for close-on-scroll.
   ScrollPosition? _scrollPosition;
 
+  // F8: accessibility fields.
+  late final FocusNode _cellFocusNode;
+
+  // ── F8: RTL-aware computed properties ──────────────────────────────────────
+
+  /// Whether the effective direction is right-to-left.
+  bool get _isRtl =>
+      SwipeDirectionResolver.isRtl(context, widget.forceDirection);
+
+  /// The resolved forward (progressive) config, considering semantic aliases.
+  RightSwipeConfig? get _resolvedForwardConfig =>
+      widget.forwardSwipeConfig ?? effectiveRightSwipeConfig;
+
+  /// The resolved backward (intentional) config, considering semantic aliases.
+  LeftSwipeConfig? get _resolvedBackwardConfig =>
+      widget.backwardSwipeConfig ?? effectiveLeftSwipeConfig;
+
+  /// Whether the current locked direction corresponds to the forward action.
+  bool get _dragIsForward =>
+      _lockedDirection == SwipeDirectionResolver.forwardPhysical(_isRtl);
+
+  /// Whether the current locked direction corresponds to the backward action.
+  bool get _dragIsBackward =>
+      _lockedDirection == SwipeDirectionResolver.backwardPhysical(_isRtl);
+
   /// The resolved gesture config after applying the theme/local/default cascade.
   late SwipeGestureConfig effectiveGestureConfig;
 
@@ -169,7 +233,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
   void didChangeDependencies() {
     super.didChangeDependencies();
     _resolveEffectiveConfigs();
-    if (_progressValueNotifier == null && effectiveRightSwipeConfig != null) {
+    if (_progressValueNotifier == null && _resolvedForwardConfig != null) {
       _initProgressiveNotifier();
     }
     // F7: attach handle and sync group registration.
@@ -210,10 +274,12 @@ class SwipeActionCellState extends State<SwipeActionCell>
     if (widget.controller == null) {
       _internalController = SwipeController();
     }
+    // F8: focus node for keyboard navigation.
+    _cellFocusNode = FocusNode();
   }
 
   void _initProgressiveNotifier() {
-    final config = effectiveRightSwipeConfig;
+    final config = _resolvedForwardConfig;
     if (config != null) {
       _progressValueNotifier = ValueNotifier(config.initialValue);
     }
@@ -224,11 +290,12 @@ class SwipeActionCellState extends State<SwipeActionCell>
     _resolveEffectiveConfigs();
 
     super.didUpdateWidget(oldWidget);
-    if (widget.rightSwipeConfig != null) {
+    final forwardConfig = _resolvedForwardConfig;
+    if (forwardConfig != null) {
       if (_progressValueNotifier == null) {
         _initProgressiveNotifier();
-      } else if (widget.rightSwipeConfig!.value != null) {
-        _progressValueNotifier!.value = widget.rightSwipeConfig!.value!;
+      } else if (forwardConfig.value != null) {
+        _progressValueNotifier!.value = forwardConfig.value!;
       }
     }
 
@@ -260,6 +327,8 @@ class SwipeActionCellState extends State<SwipeActionCell>
     _controller.removeStatusListener(_handleAnimationStatusChange);
     _controller.dispose();
     _progressValueNotifier?.dispose();
+    // F8: dispose focus node.
+    _cellFocusNode.dispose();
     super.dispose();
   }
 
@@ -267,8 +336,8 @@ class SwipeActionCellState extends State<SwipeActionCell>
 
   @override
   void executeOpenLeft() {
-    if (effectiveLeftSwipeConfig == null) return;
-    _lockedDirection = SwipeDirection.left;
+    if (_resolvedBackwardConfig == null) return;
+    _lockedDirection = SwipeDirectionResolver.backwardPhysical(_isRtl);
     _updateState(SwipeState.animatingToOpen);
     _animateToOpen(
       _controller.value,
@@ -279,10 +348,10 @@ class SwipeActionCellState extends State<SwipeActionCell>
 
   @override
   void executeOpenRight() {
-    if (effectiveRightSwipeConfig == null) return;
+    if (_resolvedForwardConfig == null) return;
     final maxT =
         effectiveAnimationConfig.maxTranslationRight ?? _widgetWidth * 0.6;
-    _lockedDirection = SwipeDirection.right;
+    _lockedDirection = SwipeDirectionResolver.forwardPhysical(_isRtl);
     _updateState(SwipeState.animatingToOpen);
     _animateToOpen(_controller.value, maxT, 0.0);
   }
@@ -295,7 +364,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
 
   @override
   void executeResetProgress() {
-    final config = effectiveRightSwipeConfig;
+    final config = _resolvedForwardConfig;
     if (config == null || _progressValueNotifier == null) return;
     _progressValueNotifier!.value = config.initialValue;
     _effectiveController.reportProgress(config.initialValue);
@@ -303,7 +372,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
 
   @override
   void executeSetProgress(double value) {
-    final config = effectiveRightSwipeConfig;
+    final config = _resolvedForwardConfig;
     if (config == null || _progressValueNotifier == null) return;
     final clamped = value.clamp(config.minValue, config.maxValue);
     if (clamped == _progressValueNotifier!.value) return;
@@ -328,35 +397,33 @@ class SwipeActionCellState extends State<SwipeActionCell>
       if (_state == SwipeState.animatingOut) {
         return;
       } else if (_state == SwipeState.animatingToClose) {
-        final wasProgressiveRight = _lockedDirection == SwipeDirection.right &&
-            effectiveRightSwipeConfig != null;
-        final wasIntentionalLeft = _lockedDirection == SwipeDirection.left &&
-            effectiveLeftSwipeConfig?.mode == LeftSwipeMode.autoTrigger;
-        final wasPanelClose = _lockedDirection == SwipeDirection.left &&
-            effectiveLeftSwipeConfig?.mode == LeftSwipeMode.reveal;
+        final wasProgressiveForward =
+            _dragIsForward && _resolvedForwardConfig != null;
+        final wasIntentionalBackward = _dragIsBackward &&
+            _resolvedBackwardConfig?.mode == LeftSwipeMode.autoTrigger;
+        final wasPanelClose = _dragIsBackward &&
+            _resolvedBackwardConfig?.mode == LeftSwipeMode.reveal;
         _lockedDirection = SwipeDirection.none;
         _awaitingConfirmation = false;
         _updateState(SwipeState.idle);
-        if (wasProgressiveRight && !_isPostIncrementSnapBack) {
-          effectiveRightSwipeConfig!.onSwipeCancelled?.call();
+        if (wasProgressiveForward && !_isPostIncrementSnapBack) {
+          _resolvedForwardConfig!.onSwipeCancelled?.call();
         }
-        if (wasIntentionalLeft && !_isPostActionSnapBack) {
-          effectiveLeftSwipeConfig!.onSwipeCancelled?.call();
+        if (wasIntentionalBackward && !_isPostActionSnapBack) {
+          _resolvedBackwardConfig!.onSwipeCancelled?.call();
         }
         if (wasPanelClose) {
-          effectiveLeftSwipeConfig!.onPanelClosed?.call();
+          _resolvedBackwardConfig!.onPanelClosed?.call();
         }
         _isPostIncrementSnapBack = false;
         _isPostActionSnapBack = false;
       } else if (_state == SwipeState.animatingToOpen) {
-        if (_lockedDirection == SwipeDirection.right &&
-            effectiveRightSwipeConfig != null) {
+        if (_dragIsForward && _resolvedForwardConfig != null) {
           _applyProgressiveIncrement();
           _isPostIncrementSnapBack = true;
           _updateState(SwipeState.animatingToClose);
           _snapBack(_controller.value, 0.0);
-        } else if (_lockedDirection == SwipeDirection.left &&
-            effectiveLeftSwipeConfig != null) {
+        } else if (_dragIsBackward && _resolvedBackwardConfig != null) {
           _handleIntentionalActionSettled();
         } else {
           _updateState(SwipeState.revealed);
@@ -366,10 +433,11 @@ class SwipeActionCellState extends State<SwipeActionCell>
   }
 
   void _handleIntentionalActionSettled() {
-    final config = effectiveLeftSwipeConfig!;
+    final config = _resolvedBackwardConfig!;
     if (config.mode == LeftSwipeMode.reveal) {
       _updateState(SwipeState.revealed);
       config.onPanelOpened?.call();
+      _announcePanelOpen();
     } else {
       if (config.requireConfirmation && !_awaitingConfirmation) {
         _awaitingConfirmation = true;
@@ -381,7 +449,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
   }
 
   void _applyIntentionalAction() {
-    final config = effectiveLeftSwipeConfig!;
+    final config = _resolvedBackwardConfig!;
     _awaitingConfirmation = false;
     if (config.enableHaptic) HapticFeedback.mediumImpact();
     config.onActionTriggered?.call();
@@ -389,7 +457,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
   }
 
   void _applyPostActionBehavior() {
-    final config = effectiveLeftSwipeConfig!;
+    final config = _resolvedBackwardConfig!;
     switch (config.postActionBehavior) {
       case PostActionBehavior.snapBack:
         _isPostActionSnapBack = true;
@@ -419,7 +487,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
   }
 
   double _leftMaxTranslation(double widgetWidth) {
-    final config = effectiveLeftSwipeConfig;
+    final config = _resolvedBackwardConfig;
     if (config?.mode == LeftSwipeMode.reveal && config!.actions.isNotEmpty) {
       return config.actionPanelWidth ??
           80.0 * config.actions.length.clamp(1, 3);
@@ -428,7 +496,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
   }
 
   void _applyProgressiveIncrement() {
-    final config = effectiveRightSwipeConfig!;
+    final config = _resolvedForwardConfig!;
     final current = _progressValueNotifier!.value;
     final result =
         computeNextProgressiveValue(current: current, config: config);
@@ -442,6 +510,8 @@ class SwipeActionCellState extends State<SwipeActionCell>
     }
     if (config.enableHaptic) HapticFeedback.mediumImpact();
     config.onSwipeCompleted?.call(result.nextValue);
+    // F8: announce progress after increment.
+    _announceProgress(result.nextValue, config.maxValue);
   }
 
   void _updateState(SwipeState newState) {
@@ -505,10 +575,10 @@ class SwipeActionCellState extends State<SwipeActionCell>
         } else if (rawNewOffset < -0.05) {
           _lockedDirection = SwipeDirection.left;
         }
-        if (_lockedDirection == SwipeDirection.right &&
-            effectiveRightSwipeConfig != null &&
+        if (_dragIsForward &&
+            _resolvedForwardConfig != null &&
             !_swipeStartedFired) {
-          effectiveRightSwipeConfig!.onSwipeStarted?.call();
+          _resolvedForwardConfig!.onSwipeStarted?.call();
           _swipeStartedFired = true;
         }
       } else {
@@ -611,6 +681,11 @@ class SwipeActionCellState extends State<SwipeActionCell>
   }
 
   void _snapBack(double fromOffset, double velocity) {
+    // F8: reduced motion — instant snap.
+    if (MediaQuery.of(context).disableAnimations) {
+      _controller.value = 0.0;
+      return;
+    }
     final spring = effectiveAnimationConfig.snapBackSpring;
     final simulation = SpringSimulation(
       SpringDescription(
@@ -625,6 +700,11 @@ class SwipeActionCellState extends State<SwipeActionCell>
   }
 
   void _animateToOpen(double fromOffset, double toOffset, double velocity) {
+    // F8: reduced motion — instant jump.
+    if (MediaQuery.of(context).disableAnimations) {
+      _controller.value = toOffset;
+      return;
+    }
     final spring = effectiveAnimationConfig.completionSpring;
     final simulation = SpringSimulation(
       SpringDescription(
@@ -639,7 +719,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
   }
 
   Widget _maybeWrapWithBodyTapInterceptor(Widget child) {
-    if (_state != SwipeState.revealed || effectiveLeftSwipeConfig == null) {
+    if (_state != SwipeState.revealed || _resolvedBackwardConfig == null) {
       return child;
     }
     return GestureDetector(
@@ -660,7 +740,11 @@ class SwipeActionCellState extends State<SwipeActionCell>
         .contains(progress.direction)) {
       return const SizedBox.shrink();
     }
-    final builder = progress.direction == SwipeDirection.right
+    // F8: RTL-aware background selection — forward drag shows rightBackground,
+    // backward drag shows leftBackground, regardless of physical direction.
+    final isForward = progress.direction ==
+        SwipeDirectionResolver.forwardPhysical(_isRtl);
+    final builder = isForward
         ? effectiveVisualConfig.rightBackground
         : effectiveVisualConfig.leftBackground;
     if (builder == null) return const SizedBox.shrink();
@@ -668,7 +752,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
   }
 
   Widget _buildProgressIndicator() {
-    final config = effectiveRightSwipeConfig!;
+    final config = _resolvedForwardConfig!;
     final indicatorConfig = config.progressIndicatorConfig;
     return Positioned(
       top: 0,
@@ -692,7 +776,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
   }
 
   Widget _buildRevealPanel(double widgetWidth) {
-    final config = effectiveLeftSwipeConfig!;
+    final config = _resolvedBackwardConfig!;
     final panelWidth =
         config.actionPanelWidth ?? 80.0 * config.actions.length.clamp(1, 3);
     final actions = config.actions.take(3).toList();
@@ -727,83 +811,219 @@ class SwipeActionCellState extends State<SwipeActionCell>
     return child;
   }
 
+  // ── F8: Accessibility helpers ──────────────────────────────────────────────
+
+  /// Default label for the forward (progressive) action.
+  String _defaultForwardLabel(bool isRtl) =>
+      isRtl ? 'Swipe left to progress' : 'Swipe right to progress';
+
+  /// Default label for the backward (intentional) action.
+  String _defaultBackwardLabel(bool isRtl) =>
+      isRtl ? 'Swipe right for actions' : 'Swipe left for actions';
+
+  /// Resolves a [SemanticLabel] with a fallback default.
+  String _resolveLabel(
+      SemanticLabel? label, String fallback, BuildContext ctx) {
+    if (label == null) return fallback;
+    final resolved = label.resolve(ctx);
+    return resolved.isEmpty ? fallback : resolved;
+  }
+
+  /// Builds custom semantics actions for screen reader users.
+  Map<CustomSemanticsAction, VoidCallback> _buildSemanticActions(
+      BuildContext context) {
+    final isRtl = _isRtl;
+    final forwardConfig = _resolvedForwardConfig;
+    final backwardConfig = _resolvedBackwardConfig;
+    final semanticCfg = widget.semanticConfig;
+    final actions = <CustomSemanticsAction, VoidCallback>{};
+    if (forwardConfig != null) {
+      final label = _resolveLabel(
+          semanticCfg?.rightSwipeLabel, _defaultForwardLabel(isRtl), context);
+      actions[CustomSemanticsAction(label: label)] =
+          _triggerForwardFromSemantics;
+    }
+    if (backwardConfig != null) {
+      final label = _resolveLabel(
+          semanticCfg?.leftSwipeLabel, _defaultBackwardLabel(isRtl), context);
+      actions[CustomSemanticsAction(label: label)] =
+          _triggerBackwardFromSemantics;
+    }
+    return actions;
+  }
+
+  /// Triggers the forward (progressive) action from screen reader or keyboard.
+  void _triggerForwardFromSemantics() {
+    if (_isAnimating || _resolvedForwardConfig == null) return;
+    final physicalDir = SwipeDirectionResolver.forwardPhysical(_isRtl);
+    _lockedDirection = physicalDir;
+    _updateState(SwipeState.animatingToOpen);
+    final maxT =
+        effectiveAnimationConfig.maxTranslationRight ?? _widgetWidth * 0.6;
+    // Physical direction determines sign: right → positive, left → negative.
+    final target = physicalDir == SwipeDirection.right ? maxT : -maxT;
+    _animateToOpen(_controller.value, target, 0.0);
+  }
+
+  /// Triggers the backward (intentional) action from screen reader or keyboard.
+  void _triggerBackwardFromSemantics() {
+    if (_isAnimating || _resolvedBackwardConfig == null) return;
+    _lockedDirection = SwipeDirectionResolver.backwardPhysical(_isRtl);
+    _updateState(SwipeState.animatingToOpen);
+    _animateToOpen(
+        _controller.value, -_leftMaxTranslation(_widgetWidth), 0.0);
+  }
+
+  /// Whether an animation is currently in progress.
+  bool get _isAnimating =>
+      _state == SwipeState.animatingToOpen ||
+      _state == SwipeState.animatingToClose ||
+      _state == SwipeState.animatingOut;
+
+  /// Announces progress change via [SemanticsService].
+  void _announceProgress(double current, double max) {
+    if (!mounted) return;
+    final msg = widget.semanticConfig?.progressAnnouncementBuilder
+            ?.call(current, max) ??
+        'Progress incremented to ${current.toStringAsFixed(0)} of ${max.toStringAsFixed(0)}';
+    // ignore: deprecated_member_use
+    SemanticsService.announce(msg, Directionality.of(context));
+  }
+
+  /// Announces panel open via [SemanticsService].
+  void _announcePanelOpen() {
+    if (!mounted) return;
+    final raw =
+        widget.semanticConfig?.panelOpenLabel?.resolve(context);
+    final msg =
+        (raw != null && raw.isNotEmpty) ? raw : 'Action panel open';
+    // ignore: deprecated_member_use
+    SemanticsService.announce(msg, Directionality.of(context));
+  }
+
+  /// Handles keyboard events for arrow-key navigation and Escape.
+  KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+    final isRtl = _isRtl;
+    final forwardKey =
+        isRtl ? LogicalKeyboardKey.arrowLeft : LogicalKeyboardKey.arrowRight;
+    final backwardKey =
+        isRtl ? LogicalKeyboardKey.arrowRight : LogicalKeyboardKey.arrowLeft;
+
+    if (event.logicalKey == forwardKey) {
+      if (_isAnimating) return KeyEventResult.handled;
+      if (_resolvedForwardConfig != null) _triggerForwardFromSemantics();
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == backwardKey) {
+      if (_isAnimating) return KeyEventResult.handled;
+      if (_resolvedBackwardConfig != null) _triggerBackwardFromSemantics();
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.escape) {
+      if (_state == SwipeState.revealed) {
+        executeClose();
+        _cellFocusNode.requestFocus();
+        return KeyEventResult.handled;
+      }
+      return KeyEventResult.ignored;
+    }
+    return KeyEventResult.ignored;
+  }
+
   @override
   Widget build(BuildContext context) {
     if (!widget.enabled) return widget.child;
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        _widgetWidth = width;
-        return RawGestureDetector(
-          behavior: HitTestBehavior.translucent,
-          gestures: _buildGestureRecognizers(width),
-          child: _wrapWithClip(
-            AnimatedBuilder(
-              animation: _controller,
-              builder: (context, child) {
-                final offset = _controller.value;
-                final maxT = _lockedDirection == SwipeDirection.right
-                    ? (effectiveAnimationConfig.maxTranslationRight ??
-                        width * 0.6)
-                    : _leftMaxTranslation(width);
-                final ratio =
-                    maxT > 0 ? (offset.abs() / maxT).clamp(0.0, 1.0) : 0.0;
-                final progress = SwipeProgress(
-                  direction: _lockedDirection,
-                  ratio: ratio,
-                  isActivated:
-                      ratio >= effectiveAnimationConfig.activationThreshold,
-                  rawOffset: offset,
-                );
-                if (_lockedDirection == SwipeDirection.right &&
-                    effectiveRightSwipeConfig?.enableHaptic == true &&
-                    progress.isActivated &&
-                    !_hapticThresholdFired) {
-                  HapticFeedback.lightImpact();
-                  _hapticThresholdFired = true;
-                }
-                if (_lockedDirection == SwipeDirection.left &&
-                    effectiveLeftSwipeConfig?.enableHaptic == true &&
-                    progress.isActivated &&
-                    !_hapticThresholdFired) {
-                  HapticFeedback.lightImpact();
-                  _hapticThresholdFired = true;
-                }
-                widget.onProgressChanged?.call(progress);
-                final translatedChild = Transform.translate(
-                  offset: Offset(offset, 0),
-                  child: _maybeWrapWithBodyTapInterceptor(child!),
-                );
-                final confirmOverlay = _awaitingConfirmation
-                    ? Positioned.fill(
-                        child: GestureDetector(
-                            behavior: HitTestBehavior.translucent,
-                            onTap: _applyIntentionalAction))
-                    : null;
-                return Stack(
-                  children: [
-                    if (effectiveVisualConfig.leftBackground != null ||
-                        effectiveVisualConfig.rightBackground != null)
-                      Positioned.fill(
-                          child: _buildBackground(context, progress)),
-                    if (confirmOverlay != null) confirmOverlay,
-                    translatedChild,
-                    if (effectiveLeftSwipeConfig?.mode ==
-                            LeftSwipeMode.reveal &&
-                        _state == SwipeState.revealed &&
-                        effectiveLeftSwipeConfig!.actions.isNotEmpty)
-                      _buildRevealPanel(width),
-                    if (effectiveRightSwipeConfig != null &&
-                        effectiveRightSwipeConfig!.showProgressIndicator)
-                      _buildProgressIndicator(),
-                  ],
-                );
-              },
-              child: widget.child,
-            ),
-          ),
-        );
-      },
+
+    // F8: resolve semantic actions for screen reader.
+    final semanticActions = _buildSemanticActions(context);
+    final cellLabel = widget.semanticConfig?.cellLabel?.resolve(context);
+
+    return Focus(
+      focusNode: _cellFocusNode,
+      onKeyEvent: _handleKeyEvent,
+      child: Semantics(
+        label:
+            (cellLabel != null && cellLabel.isNotEmpty) ? cellLabel : null,
+        customSemanticsActions:
+            semanticActions.isEmpty ? null : semanticActions,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final width = constraints.maxWidth;
+            _widgetWidth = width;
+            return RawGestureDetector(
+              behavior: HitTestBehavior.translucent,
+              gestures: _buildGestureRecognizers(width),
+              child: _wrapWithClip(
+                AnimatedBuilder(
+                  animation: _controller,
+                  builder: (context, child) {
+                    final offset = _controller.value;
+                    final maxT = _lockedDirection == SwipeDirection.right
+                        ? (effectiveAnimationConfig.maxTranslationRight ??
+                            width * 0.6)
+                        : _leftMaxTranslation(width);
+                    final ratio = maxT > 0
+                        ? (offset.abs() / maxT).clamp(0.0, 1.0)
+                        : 0.0;
+                    final progress = SwipeProgress(
+                      direction: _lockedDirection,
+                      ratio: ratio,
+                      isActivated: ratio >=
+                          effectiveAnimationConfig.activationThreshold,
+                      rawOffset: offset,
+                    );
+                    if (_dragIsForward &&
+                        _resolvedForwardConfig?.enableHaptic == true &&
+                        progress.isActivated &&
+                        !_hapticThresholdFired) {
+                      HapticFeedback.lightImpact();
+                      _hapticThresholdFired = true;
+                    }
+                    if (_dragIsBackward &&
+                        _resolvedBackwardConfig?.enableHaptic == true &&
+                        progress.isActivated &&
+                        !_hapticThresholdFired) {
+                      HapticFeedback.lightImpact();
+                      _hapticThresholdFired = true;
+                    }
+                    widget.onProgressChanged?.call(progress);
+                    final translatedChild = Transform.translate(
+                      offset: Offset(offset, 0),
+                      child: _maybeWrapWithBodyTapInterceptor(child!),
+                    );
+                    final confirmOverlay = _awaitingConfirmation
+                        ? Positioned.fill(
+                            child: GestureDetector(
+                                behavior: HitTestBehavior.translucent,
+                                onTap: _applyIntentionalAction))
+                        : null;
+                    return Stack(
+                      children: [
+                        if (effectiveVisualConfig.leftBackground != null ||
+                            effectiveVisualConfig.rightBackground != null)
+                          Positioned.fill(
+                              child: _buildBackground(context, progress)),
+                        if (confirmOverlay != null) confirmOverlay,
+                        translatedChild,
+                        if (_resolvedBackwardConfig?.mode ==
+                                LeftSwipeMode.reveal &&
+                            _state == SwipeState.revealed &&
+                            _resolvedBackwardConfig!.actions.isNotEmpty)
+                          _buildRevealPanel(width),
+                        if (_resolvedForwardConfig != null &&
+                            _resolvedForwardConfig!.showProgressIndicator)
+                          _buildProgressIndicator(),
+                      ],
+                    );
+                  },
+                  child: widget.child,
+                ),
+              ),
+            );
+          },
+        ),
+      ),
     );
   }
 }

@@ -6,6 +6,7 @@
 /// ```
 library;
 
+export 'src/accessibility/swipe_semantic_config.dart';
 export 'src/actions/intentional/left_swipe_mode.dart';
 export 'src/actions/intentional/post_action_behavior.dart';
 export 'src/actions/intentional/swipe_action.dart';
@@ -23,6 +24,7 @@ export 'src/controller/swipe_controller.dart';
 export 'src/controller/swipe_controller_provider.dart';
 export 'src/controller/swipe_group_controller.dart';
 export 'src/core/swipe_direction.dart';
+export 'src/core/swipe_direction_resolver.dart';
 export 'src/core/swipe_progress.dart';
 export 'src/core/swipe_state.dart';
 export 'src/core/typedefs.dart';
