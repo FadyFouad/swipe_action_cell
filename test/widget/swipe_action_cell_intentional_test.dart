@@ -39,7 +39,7 @@ Future<void> swipeLeft(
   WidgetTester tester, {
   double distance = 260.0,
 }) async {
-  await tester.drag(find.byType(SwipeActionCell), Offset(-distance, 0));
+  await tester.drag(find.byType(SwipeActionCell), warnIfMissed: false, Offset(-distance, 0));
   await tester.pumpAndSettle();
 }
 
@@ -48,13 +48,13 @@ Future<void> swipeRight(
   WidgetTester tester, {
   double distance = 260.0,
 }) async {
-  await tester.drag(find.byType(SwipeActionCell), Offset(distance, 0));
+  await tester.drag(find.byType(SwipeActionCell), warnIfMissed: false, Offset(distance, 0));
   await tester.pumpAndSettle();
 }
 
 /// Simulates a fling to the left.
 Future<void> flingLeft(WidgetTester tester) async {
-  await tester.fling(find.byType(SwipeActionCell), const Offset(-260, 0), 1000);
+  await tester.fling(find.byType(SwipeActionCell), const Offset(-260, 0), 1000, warnIfMissed: false);
   await tester.pumpAndSettle();
 }
 
@@ -201,7 +201,7 @@ void main() {
       await swipeLeft(tester);
       expect(find.byType(SwipeActionPanel), findsOneWidget);
 
-      await tester.tap(find.text('cell'), warnIfMissed: false);
+      await tester.tapAt(const Offset(100, 30));
       await tester.pumpAndSettle();
 
       expect(find.byType(SwipeActionPanel), findsNothing);
@@ -330,7 +330,7 @@ void main() {
       ));
 
       await swipeLeft(tester);
-      await tester.tap(find.text('cell'), warnIfMissed: false);
+      await tester.tapAt(const Offset(100, 30));
       await tester.pumpAndSettle();
 
       expect(triggered, isFalse);

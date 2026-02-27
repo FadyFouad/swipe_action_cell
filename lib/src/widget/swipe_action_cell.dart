@@ -150,6 +150,8 @@ class SwipeActionCellState extends State<SwipeActionCell>
 
   @override
   void didUpdateWidget(SwipeActionCell oldWidget) {
+    _resolveEffectiveConfigs();
+
     super.didUpdateWidget(oldWidget);
     if (widget.rightSwipeConfig != null) {
       if (_progressValueNotifier == null) {
@@ -225,7 +227,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
     }
   }
 
-  void _applyIntentionalAction() {
+  void _applyIntentionalAction() { 
     final config = effectiveLeftSwipeConfig!;
     _awaitingConfirmation = false;
     if (config.enableHaptic) HapticFeedback.mediumImpact();
@@ -430,7 +432,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
     _controller.animateWith(simulation);
   }
 
-  Widget _maybeWrapWithBodyTapInterceptor(Widget child) {
+  Widget _maybeWrapWithBodyTapInterceptor(Widget child) { 
     if (_state != SwipeState.revealed || effectiveLeftSwipeConfig == null) {
       return child;
     }
@@ -441,14 +443,14 @@ class SwipeActionCellState extends State<SwipeActionCell>
     );
   }
 
-  void _handleBodyTapInRevealedState() {
+  void _handleBodyTapInRevealedState() { 
     _awaitingConfirmation = false;
     _updateState(SwipeState.animatingToClose);
     _snapBack(_controller.value, 0.0);
   }
 
   Widget _buildBackground(BuildContext context, SwipeProgress progress) {
-    final builder = progress.direction == SwipeDirection.right
+    if (!effectiveGestureConfig.enabledDirections.contains(progress.direction)) return const SizedBox.shrink(); final builder = progress.direction == SwipeDirection.right
         ? effectiveVisualConfig.rightBackground
         : effectiveVisualConfig.leftBackground;
     if (builder == null) return const SizedBox.shrink();

@@ -1,5 +1,5 @@
 import 'package:flutter/widgets.dart';
-import 'package:swipe_action_cell/swipe_action_cell.dart';
+import '../core/typedefs.dart';
 
 
 /// Configuration for the visual appearance and backgrounds of [SwipeActionCell].

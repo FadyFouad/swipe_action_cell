@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
-import 'package:swipe_action_cell/swipe_action_cell.dart';
+import '../core/typedefs.dart';
+import '../actions/progressive/overflow_behavior.dart';
+import '../actions/progressive/progress_indicator_config.dart';
 
 /// Configuration for right-swipe progressive action behavior.
 @immutable

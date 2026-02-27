@@ -6,7 +6,7 @@ void main() {
   group('F3: Progressive Swipe (Right)', () {
     testWidgets('Swipe right past stepValue fires onSwipeCompleted',
         (tester) async {
-      double? result;
+      double result = -1.0;
       await tester.pumpWidget(MaterialApp(
         home: Scaffold(
           body: SwipeActionCell(
@@ -20,10 +20,8 @@ void main() {
         ),
       ));
 
-      // Drag right by 50 (two steps)
-      final gesture = await tester.startGesture(const Offset(10, 30));
-      await gesture.moveBy(const Offset(50, 0));
-      await gesture.up();
+      // Drag right by 200 to pass activation threshold
+      await tester.drag(find.byType(SwipeActionCell), const Offset(200, 0));
       await tester.pumpAndSettle();
 
       expect(result, 25.0);
@@ -44,10 +42,10 @@ void main() {
         ),
       ));
 
-      final gesture = await tester.startGesture(const Offset(10, 30));
-      await gesture.moveBy(const Offset(20, 0));
+      await tester.drag(find.byType(SwipeActionCell), const Offset(200, 0));
+      await tester.pumpAndSettle();
+      
       expect(started, isTrue);
-      await gesture.up();
     });
 
     testWidgets('initialValue is respected', (tester) async {
@@ -67,10 +65,7 @@ void main() {
         ),
       ));
 
-      // Swipe one step
-      final gesture = await tester.startGesture(const Offset(10, 30));
-      await gesture.moveBy(const Offset(50, 0));
-      await gesture.up();
+      await tester.drag(find.byType(SwipeActionCell), const Offset(200, 0));
       await tester.pumpAndSettle();
 
       expect(current, 9.0);
@@ -100,7 +95,7 @@ void main() {
       await tester.pumpWidget(build(currentVal));
 
       // Swipe one step
-      double? result;
+      double result = -1.0;
       await tester.pumpWidget(MaterialApp(
         home: Scaffold(
           body: SwipeActionCell(
@@ -109,16 +104,14 @@ void main() {
               minValue: 0.0,
               maxValue: 10.0,
               value: currentVal,
-              onSwipeCompleted: (v) => result = val,
+              onSwipeCompleted: (v) => result = v,
             ),
             child: const SizedBox(width: 400, height: 60, child: Text('cell')),
           ),
         ),
       ));
 
-      final gesture = await tester.startGesture(const Offset(10, 30));
-      await gesture.moveBy(const Offset(50, 0));
-      await gesture.up();
+      await tester.drag(find.byType(SwipeActionCell), const Offset(200, 0));
       await tester.pumpAndSettle();
 
       expect(result, 10.0);

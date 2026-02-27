@@ -17,7 +17,7 @@ Spring-based physics, an explicit state machine, and zero external runtime depen
 - [x] F2: Spring-based animation & snap-back/completion
 - [x] F5: Background builders & progress-linked transitions
 - [x] F3: Right swipe — incremental value tracking (progressive)
-- [ ] F4: Left swipe — auto-trigger & reveal modes (intentional)
+- [x] F4: Left swipe — auto-trigger & reveal modes (intentional)
 
 ### Phase 2 — Production Ready
 
@@ -63,35 +63,114 @@ SwipeActionCell(
 )
 ```
 
-### With visual backgrounds
+---
 
-`SwipeActionBackground` provides a progress-reactive icon/label panel. The background
-color darkens and the icon scales up as the user approaches the activation threshold,
-with a brief bump animation at the moment the threshold is crossed.
+## Left Swipe — Intentional Action
+
+Left swipes express deliberate, committed intent (delete, archive, reveal options). Two
+mutually exclusive modes are available via `LeftSwipeMode`.
+
+### Auto-trigger: fire a callback on swipe
+
+The simplest left-swipe pattern. Swipe past the threshold and release → action fires once.
 
 ```dart
 SwipeActionCell(
-  leftBackground: (progress) => SwipeActionBackground(
-    icon: const Icon(Icons.delete),
-    backgroundColor: const Color(0xFFE53935),
-    foregroundColor: const Color(0xFFFFFFFF),
-    label: 'Delete',
-    progress: progress,
+  leftSwipe: IntentionalSwipeConfig(
+    mode: LeftSwipeMode.autoTrigger,
+    onActionTriggered: () => print('Action fired!'),
   ),
-  rightBackground: (progress) => SwipeActionBackground(
-    icon: const Icon(Icons.add),
-    backgroundColor: const Color(0xFF43A047),
-    foregroundColor: const Color(0xFFFFFFFF),
-    progress: progress,
-  ),
-  child: ListTile(title: Text('Swipeable item')),
+  child: ListTile(title: Text('Swipe me left')),
 )
 ```
 
-### Right-swipe progressive action (uncontrolled)
+### Auto-trigger with animate-out (e.g., delete)
 
-Each right swipe past the activation threshold increments an internal counter. The cell
-snaps back to idle immediately — it never enters a "revealed" state.
+```dart
+SwipeActionCell(
+  leftBackground: (context, progress) => ColoredBox(
+    color: Colors.red,
+    child: Align(
+      alignment: Alignment.centerRight,
+      child: Padding(
+        padding: const EdgeInsets.only(right: 16),
+        child: Icon(Icons.delete, color: Colors.white),
+      ),
+    ),
+  ),
+  leftSwipe: IntentionalSwipeConfig(
+    mode: LeftSwipeMode.autoTrigger,
+    postActionBehavior: PostActionBehavior.animateOut,
+    enableHaptic: true,
+    onActionTriggered: () => deleteItem(item),
+  ),
+  child: ListTile(title: Text(item.title)),
+)
+```
+
+> **Note**: The widget does NOT collapse its height after `animateOut`. Call `setState` in
+> `onActionTriggered` to remove the item from your list, then use `AnimatedList` for a
+> height-collapse animation.
+
+### Reveal mode: action panel with buttons
+
+```dart
+SwipeActionCell(
+  leftSwipe: IntentionalSwipeConfig(
+    mode: LeftSwipeMode.reveal,
+    actions: [
+      SwipeAction(
+        icon: const Icon(Icons.archive),
+        label: 'Archive',
+        backgroundColor: const Color(0xFF43A047),
+        foregroundColor: Colors.white,
+        onTap: () => archiveItem(item),
+      ),
+      SwipeAction(
+        icon: const Icon(Icons.delete),
+        label: 'Delete',
+        backgroundColor: const Color(0xFFE53935),
+        foregroundColor: Colors.white,
+        onTap: () => deleteItem(item),
+        isDestructive: true,   // requires two taps to confirm
+      ),
+    ],
+    onPanelOpened: () => print('Panel opened'),
+    onPanelClosed: () => print('Panel closed'),
+  ),
+  child: ListTile(title: Text(item.title)),
+)
+```
+
+### Confirmation mode (require a second gesture)
+
+```dart
+SwipeActionCell(
+  leftSwipe: IntentionalSwipeConfig(
+    mode: LeftSwipeMode.autoTrigger,
+    requireConfirmation: true,   // first swipe holds open; second fires
+    onActionTriggered: () => deleteItem(item),
+  ),
+  child: ListTile(title: Text('Swipe twice to delete')),
+)
+```
+
+### Post-action behaviors
+
+| Value | Cell movement | Default? |
+|-------|--------------|---------|
+| `PostActionBehavior.snapBack` | Springs back to resting position | ✅ Yes |
+| `PostActionBehavior.animateOut` | Slides off-screen to the left | No |
+| `PostActionBehavior.stay` | Holds at open position; right-swipe to close | No |
+
+---
+
+## Right Swipe — Progressive Action
+
+Right swipes express incremental, repeatable intent (increment a counter, increase progress).
+The cell never enters a "revealed" state — it snaps back immediately after each swipe.
+
+### Uncontrolled (internal state)
 
 ```dart
 SwipeActionCell(
@@ -109,10 +188,7 @@ SwipeActionCell(
 )
 ```
 
-### Right-swipe progressive action (controlled)
-
-Pass a non-null `value` to take ownership of the displayed value. The widget will call
-`onProgressChanged` but will **not** self-update — you drive state externally.
+### Controlled (external state)
 
 ```dart
 class _MyState extends State<MyWidget> {
@@ -159,8 +235,6 @@ ProgressiveSwipeConfig(
 
 ### Dynamic step
 
-Supply a callback to vary the increment per swipe based on the current value.
-
 ```dart
 ProgressiveSwipeConfig(
   maxValue: 100.0,
@@ -170,9 +244,6 @@ ProgressiveSwipeConfig(
 ```
 
 ### Progress indicator
-
-Render a persistent colored bar on the leading edge of the cell. Requires a finite
-`maxValue`.
 
 ```dart
 ProgressiveSwipeConfig(
@@ -187,17 +258,56 @@ ProgressiveSwipeConfig(
 )
 ```
 
-### Haptic feedback
+---
+
+## Both Directions Simultaneously
+
+Right-swipe progressive and left-swipe intentional are fully independent:
 
 ```dart
-ProgressiveSwipeConfig(
-  stepValue: 1.0,
-  maxValue: 10.0,
-  enableHaptic: true,   // light on threshold cross, medium on increment
+SwipeActionCell(
+  rightSwipe: ProgressiveSwipeConfig(
+    onSwipeCompleted: (value) => print('Incremented to $value'),
+  ),
+  leftSwipe: IntentionalSwipeConfig(
+    mode: LeftSwipeMode.autoTrigger,
+    postActionBehavior: PostActionBehavior.animateOut,
+    onActionTriggered: () => deleteItem(item),
+  ),
+  child: ListTile(title: Text('Bidirectional')),
 )
 ```
 
-### Gesture & animation tuning
+---
+
+## Visual Backgrounds
+
+`SwipeActionBackground` provides a progress-reactive icon/label panel. The background
+color darkens and the icon scales up as the user approaches the activation threshold,
+with a brief bump animation at the threshold crossing.
+
+```dart
+SwipeActionCell(
+  leftBackground: (context, progress) => SwipeActionBackground(
+    icon: const Icon(Icons.delete),
+    backgroundColor: const Color(0xFFE53935),
+    foregroundColor: Colors.white,
+    label: 'Delete',
+    progress: progress,
+  ),
+  rightBackground: (context, progress) => SwipeActionBackground(
+    icon: const Icon(Icons.add),
+    backgroundColor: const Color(0xFF43A047),
+    foregroundColor: Colors.white,
+    progress: progress,
+  ),
+  child: ListTile(title: Text('Swipeable item')),
+)
+```
+
+---
+
+## Gesture & Animation Tuning
 
 ```dart
 SwipeActionCell(
@@ -214,6 +324,8 @@ SwipeActionCell(
 )
 ```
 
+---
+
 ## API Reference
 
 ### `SwipeActionCell`
@@ -223,22 +335,50 @@ SwipeActionCell(
 | `child` | `Widget` | required | The widget inside the cell |
 | `gestureConfig` | `SwipeGestureConfig` | defaults | Dead zone, directions, fling velocity |
 | `animationConfig` | `SwipeAnimationConfig` | defaults | Spring physics, thresholds |
-| `leftBackground` | `SwipeBackgroundBuilder?` | `null` | Background for left swipe |
-| `rightBackground` | `SwipeBackgroundBuilder?` | `null` | Background for right swipe |
-| `rightSwipe` | `ProgressiveSwipeConfig?` | `null` | Progressive right-swipe config; `null` disables feature |
+| `leftBackground` | `SwipeBackgroundBuilder?` | `null` | Background builder for left swipe |
+| `rightBackground` | `SwipeBackgroundBuilder?` | `null` | Background builder for right swipe |
+| `rightSwipe` | `ProgressiveSwipeConfig?` | `null` | Progressive right-swipe config; `null` disables |
+| `leftSwipe` | `IntentionalSwipeConfig?` | `null` | Intentional left-swipe config; `null` disables |
 | `onStateChanged` | `ValueChanged<SwipeState>?` | `null` | State machine transition callback |
 | `onProgressChanged` | `ValueChanged<SwipeProgress>?` | `null` | Per-frame drag progress |
 | `enabled` | `bool` | `true` | Enable/disable all swipe interactions |
 | `clipBehavior` | `Clip` | `Clip.hardEdge` | Clipping mode for child/background stack |
 | `borderRadius` | `BorderRadius?` | `null` | Corner radius for clip |
 
+### `IntentionalSwipeConfig`
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `mode` | `LeftSwipeMode` | required | `autoTrigger` or `reveal` |
+| `actions` | `List<SwipeAction>` | `[]` | Buttons for reveal panel (1–3 items) |
+| `actionPanelWidth` | `double?` | `null` | Panel width override; auto-calculated when `null` |
+| `postActionBehavior` | `PostActionBehavior` | `.snapBack` | Cell position after auto-trigger fires |
+| `requireConfirmation` | `bool` | `false` | Whether a second gesture confirms the action |
+| `enableHaptic` | `bool` | `false` | Haptic on threshold cross + action execute |
+| `onActionTriggered` | `VoidCallback?` | `null` | Fires when auto-trigger action executes |
+| `onSwipeCancelled` | `VoidCallback?` | `null` | Below-threshold release (auto-trigger only) |
+| `onPanelOpened` | `VoidCallback?` | `null` | Reveal panel animation settled open |
+| `onPanelClosed` | `VoidCallback?` | `null` | Reveal panel closed (any trigger) |
+
+### `SwipeAction`
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `icon` | `Widget` | required | Icon displayed in the action button |
+| `label` | `String?` | `null` | Optional text label below the icon |
+| `backgroundColor` | `Color` | required | Button background color |
+| `foregroundColor` | `Color` | required | Icon and label color |
+| `onTap` | `VoidCallback` | required | Callback when the button is tapped |
+| `isDestructive` | `bool` | `false` | Whether the action requires a two-tap confirm |
+| `flex` | `int` | `1` | Relative width share in the panel |
+
 ### `ProgressiveSwipeConfig`
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `value` | `double?` | `null` | Non-null = controlled mode; `null` = uncontrolled |
-| `initialValue` | `double` | `0.0` | Starting value (uncontrolled only; clamped to range) |
-| `stepValue` | `double` | `1.0` | Fixed increment per swipe (requires `> 0`) |
+| `initialValue` | `double` | `0.0` | Starting value (uncontrolled only) |
+| `stepValue` | `double` | `1.0` | Fixed increment per swipe (must be `> 0`) |
 | `maxValue` | `double` | `double.infinity` | Upper bound |
 | `minValue` | `double` | `0.0` | Lower bound and wrap-reset target |
 | `overflowBehavior` | `OverflowBehavior` | `.clamp` | What happens when step would exceed `maxValue` |
@@ -260,15 +400,6 @@ SwipeActionCell(
 | `wrap` | Value resets to `minValue` | Yes |
 | `ignore` | Value grows without limit | No |
 
-### `ProgressIndicatorConfig`
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `color` | `Color` | green `0xFF4CAF50` | Fill color |
-| `width` | `double` | `4.0` | Bar width in logical pixels (must be `> 0`) |
-| `backgroundColor` | `Color?` | `null` | Track color behind fill; `null` = transparent |
-| `borderRadius` | `BorderRadius?` | `null` | Rounded corners |
-
 ### `SwipeGestureConfig`
 
 | Parameter | Type | Default | Description |
@@ -288,18 +419,39 @@ SwipeActionCell(
 | `maxTranslationLeft` | `double?` | `null` | Max drag extent left (logical pixels) |
 | `maxTranslationRight` | `double?` | `null` | Max drag extent right (logical pixels) |
 
+### `ProgressIndicatorConfig`
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `color` | `Color` | `Color(0xFF4CAF50)` | Fill color |
+| `width` | `double` | `4.0` | Bar width in logical pixels (must be `> 0`) |
+| `backgroundColor` | `Color?` | `null` | Track color; `null` = transparent |
+| `borderRadius` | `BorderRadius?` | `null` | Rounded corners |
+
+---
+
 ## State Machine
 
 ```
-idle ──drag──▶ dragging ──release above threshold──▶ animatingToOpen
+                    ┌─────────────────────────────────────────────────────┐
+                    │                                                     │
+idle ──drag──▶ dragging ──release above threshold──▶ animatingToOpen      │
                         ──release below threshold──▶ animatingToClose ──▶ idle
 
-animatingToOpen ──[left / no rightSwipe]──▶ revealed ──drag──▶ dragging
-animatingToOpen ──[right + rightSwipe]────▶ [increment] ──▶ animatingToClose ──▶ idle
+animatingToOpen ──[left / autoTrigger]──▶ revealed ──right-drag──▶ animatingToClose ──▶ idle
+                                                   ──body tap──▶ animatingToClose ──▶ idle
+animatingToOpen ──[left / reveal]───────▶ revealed ──action tap──▶ animatingToClose ──▶ idle
+animatingToOpen ──[right + rightSwipe]──▶ [increment] ──▶ animatingToClose ──▶ idle
+animatingToOpen ──[left / animateOut]───▶ animatingOut  (slides off-screen)
 ```
 
 Right swipe with `rightSwipe` configured **never enters `revealed`** — it increments
 the value and snaps back to `idle` immediately.
+
+Left swipe with `postActionBehavior: PostActionBehavior.animateOut` transitions through
+`animatingOut` — remove the item from your data source in `onActionTriggered`.
+
+---
 
 ## License
 

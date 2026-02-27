@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
-import 'package:swipe_action_cell/swipe_action_cell.dart';
+import '../actions/intentional/left_swipe_mode.dart';
+import '../actions/intentional/post_action_behavior.dart';
+import '../actions/intentional/swipe_action.dart';
 
 
 /// Configuration for left-swipe intentional (one-shot) action behavior.
