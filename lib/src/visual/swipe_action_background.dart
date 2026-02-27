@@ -44,7 +44,7 @@ class _SwipeActionBackgroundState extends State<SwipeActionBackground>
     super.initState();
     _bumpController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 00),
     );
 
     _bumpAnimation = TweenSequence<double>([

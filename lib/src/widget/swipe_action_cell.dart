@@ -492,7 +492,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
       return config.actionPanelWidth ??
           80.0 * config.actions.length.clamp(1, 3);
     }
-    return effectiveAnimationConfig.maxTranslationLeft ?? widgetWidth * 0.6;
+    return effectiveAnimationConfig.maxTranslationLeft ?? widgetWidth * 0.35;
   }
 
   void _applyProgressiveIncrement() {
