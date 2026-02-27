@@ -13,7 +13,10 @@ import '../config/left_swipe_config.dart';
 import '../config/right_swipe_config.dart';
 import '../config/swipe_action_cell_theme.dart';
 import '../config/swipe_visual_config.dart';
+import '../controller/swipe_cell_handle.dart';
 import '../controller/swipe_controller.dart';
+import '../controller/swipe_controller_provider.dart';
+import '../controller/swipe_group_controller.dart';
 import '../core/swipe_direction.dart';
 import '../core/swipe_progress.dart';
 import '../core/swipe_state.dart';
@@ -103,7 +106,8 @@ class SwipeActionCell extends StatefulWidget {
 ///
 /// Exposed for testing via `tester.state<SwipeActionCellState>(...)`.
 class SwipeActionCellState extends State<SwipeActionCell>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin
+    implements SwipeCellHandle {
   late final AnimationController _controller;
   SwipeState _state = SwipeState.idle;
   SwipeDirection _lockedDirection = SwipeDirection.none;
@@ -114,6 +118,17 @@ class SwipeActionCellState extends State<SwipeActionCell>
   bool _isPostIncrementSnapBack = false;
   bool _swipeStartedFired = false;
   bool _hapticThresholdFired = false;
+
+  // F7 controller fields.
+  /// Internal controller created when [SwipeActionCell.controller] is null.
+  SwipeController? _internalController;
+
+  /// The effective controller: consumer-provided or the internal one.
+  SwipeController get _effectiveController =>
+      widget.controller ?? _internalController!;
+
+  /// The group this cell is currently registered with (cached to enable cleanup).
+  SwipeGroupController? _registeredGroup;
 
   /// Cached widget width from [LayoutBuilder]; used for animateOut target.
   double _widgetWidth = 400.0;
@@ -153,6 +168,11 @@ class SwipeActionCellState extends State<SwipeActionCell>
     if (_progressValueNotifier == null && effectiveRightSwipeConfig != null) {
       _initProgressiveNotifier();
     }
+    // F7: attach handle and sync group registration.
+    if (!_effectiveController.hasHandle) {
+      _effectiveController.attach(this);
+    }
+    _syncGroupRegistration();
   }
 
   void _resolveEffectiveConfigs() {
@@ -180,6 +200,10 @@ class SwipeActionCellState extends State<SwipeActionCell>
       value: 0.0,
     );
     _controller.addStatusListener(_handleAnimationStatusChange);
+    // F7: create internal controller when consumer provides none.
+    if (widget.controller == null) {
+      _internalController = SwipeController();
+    }
   }
 
   void _initProgressiveNotifier() {
@@ -201,14 +225,94 @@ class SwipeActionCellState extends State<SwipeActionCell>
         _progressValueNotifier!.value = widget.rightSwipeConfig!.value!;
       }
     }
+
+    // F7: handle controller swap.
+    if (widget.controller != oldWidget.controller) {
+      final oldController = oldWidget.controller ?? _internalController!;
+      _registeredGroup?.unregister(oldController);
+      oldController.detach(this);
+
+      if (widget.controller == null && _internalController == null) {
+        _internalController = SwipeController();
+      } else if (widget.controller != null) {
+        _internalController?.dispose();
+        _internalController = null;
+      }
+      _effectiveController.attach(this);
+      _registeredGroup?.register(_effectiveController);
+    }
   }
 
   @override
   void dispose() {
+    // F7: unregister from group and detach from controller before disposal.
+    _registeredGroup?.unregister(_effectiveController);
+    _effectiveController.detach(this);
+    _internalController?.dispose();
     _controller.removeStatusListener(_handleAnimationStatusChange);
     _controller.dispose();
     _progressValueNotifier?.dispose();
     super.dispose();
+  }
+
+  // ── SwipeCellHandle — F7 bridge methods ────────────────────────────────────
+
+  @override
+  void executeOpenLeft() {
+    if (effectiveLeftSwipeConfig == null) return;
+    _lockedDirection = SwipeDirection.left;
+    _updateState(SwipeState.animatingToOpen);
+    _animateToOpen(
+      _controller.value,
+      -_leftMaxTranslation(_widgetWidth),
+      0.0,
+    );
+  }
+
+  @override
+  void executeOpenRight() {
+    if (effectiveRightSwipeConfig == null) return;
+    final maxT =
+        effectiveAnimationConfig.maxTranslationRight ?? _widgetWidth * 0.6;
+    _lockedDirection = SwipeDirection.right;
+    _updateState(SwipeState.animatingToOpen);
+    _animateToOpen(_controller.value, maxT, 0.0);
+  }
+
+  @override
+  void executeClose() {
+    _updateState(SwipeState.animatingToClose);
+    _snapBack(_controller.value, 0.0);
+  }
+
+  @override
+  void executeResetProgress() {
+    final config = effectiveRightSwipeConfig;
+    if (config == null || _progressValueNotifier == null) return;
+    _progressValueNotifier!.value = config.initialValue;
+    _effectiveController.reportProgress(config.initialValue);
+  }
+
+  @override
+  void executeSetProgress(double value) {
+    final config = effectiveRightSwipeConfig;
+    if (config == null || _progressValueNotifier == null) return;
+    final clamped = value.clamp(config.minValue, config.maxValue);
+    if (clamped == _progressValueNotifier!.value) return;
+    _progressValueNotifier!.value = clamped;
+    _effectiveController.reportProgress(clamped);
+  }
+
+  /// Syncs this cell's registration with the nearest [SwipeControllerProvider].
+  ///
+  /// Has an empty body in US1 — filled in by T013 (US4).
+  void _syncGroupRegistration() {
+    // T013 will fill this in.
+    final newGroup = SwipeControllerProvider.maybeGroupOf(context);
+    if (newGroup == _registeredGroup) return;
+    _registeredGroup?.unregister(_effectiveController);
+    _registeredGroup = newGroup;
+    _registeredGroup?.register(_effectiveController);
   }
 
   void _handleAnimationStatusChange(AnimationStatus status) {
@@ -338,6 +442,12 @@ class SwipeActionCellState extends State<SwipeActionCell>
       _state = newState;
     });
     widget.onStateChanged?.call(newState);
+    // F7: push state to the controller so observers and group accordion can react.
+    _effectiveController.reportState(
+      newState,
+      _progressValueNotifier?.value ?? 0.0,
+      newState == SwipeState.revealed ? _lockedDirection : null,
+    );
   }
 
   double _applyResistance(
@@ -430,16 +540,17 @@ class SwipeActionCellState extends State<SwipeActionCell>
       return;
     }
     final ratio = _controller.value.abs() / maxT;
-    final isFling = velocity.abs() >= effectiveGestureConfig.velocityThreshold &&
-        (_lockedDirection == SwipeDirection.right ? velocity > 0 : velocity < 0);
+    final isFling =
+        velocity.abs() >= effectiveGestureConfig.velocityThreshold &&
+            (_lockedDirection == SwipeDirection.right
+                ? velocity > 0
+                : velocity < 0);
     final shouldComplete =
         isFling || ratio >= effectiveAnimationConfig.activationThreshold;
     if (shouldComplete) {
       _updateState(SwipeState.animatingToOpen);
-      _animateToOpen(
-          _controller.value,
-          _lockedDirection == SwipeDirection.right ? maxT : -maxT,
-          velocity);
+      _animateToOpen(_controller.value,
+          _lockedDirection == SwipeDirection.right ? maxT : -maxT, velocity);
     } else {
       _updateState(SwipeState.animatingToClose);
       _snapBack(_controller.value, velocity);
@@ -450,7 +561,9 @@ class SwipeActionCellState extends State<SwipeActionCell>
     final spring = effectiveAnimationConfig.snapBackSpring;
     final simulation = SpringSimulation(
       SpringDescription(
-          mass: spring.mass, stiffness: spring.stiffness, damping: spring.damping),
+          mass: spring.mass,
+          stiffness: spring.stiffness,
+          damping: spring.damping),
       fromOffset,
       0.0,
       velocity,
@@ -462,7 +575,9 @@ class SwipeActionCellState extends State<SwipeActionCell>
     final spring = effectiveAnimationConfig.completionSpring;
     final simulation = SpringSimulation(
       SpringDescription(
-          mass: spring.mass, stiffness: spring.stiffness, damping: spring.damping),
+          mass: spring.mass,
+          stiffness: spring.stiffness,
+          damping: spring.damping),
       fromOffset,
       toOffset,
       velocity,
@@ -488,7 +603,8 @@ class SwipeActionCellState extends State<SwipeActionCell>
   }
 
   Widget _buildBackground(BuildContext context, SwipeProgress progress) {
-    if (!effectiveGestureConfig.enabledDirections.contains(progress.direction)) {
+    if (!effectiveGestureConfig.enabledDirections
+        .contains(progress.direction)) {
       return const SizedBox.shrink();
     }
     final builder = progress.direction == SwipeDirection.right
@@ -524,8 +640,8 @@ class SwipeActionCellState extends State<SwipeActionCell>
 
   Widget _buildRevealPanel(double widgetWidth) {
     final config = effectiveLeftSwipeConfig!;
-    final panelWidth = config.actionPanelWidth ??
-        80.0 * config.actions.length.clamp(1, 3);
+    final panelWidth =
+        config.actionPanelWidth ?? 80.0 * config.actions.length.clamp(1, 3);
     final actions = config.actions.take(3).toList();
     return Positioned(
       top: 0,
@@ -568,7 +684,8 @@ class SwipeActionCellState extends State<SwipeActionCell>
         return GestureDetector(
           behavior: HitTestBehavior.translucent,
           onHorizontalDragStart: _handleDragStart,
-          onHorizontalDragUpdate: (details) => _handleDragUpdate(details, width),
+          onHorizontalDragUpdate: (details) =>
+              _handleDragUpdate(details, width),
           onHorizontalDragEnd: (details) => _handleDragEnd(details, width),
           child: _wrapWithClip(
             AnimatedBuilder(
@@ -617,10 +734,12 @@ class SwipeActionCellState extends State<SwipeActionCell>
                   children: [
                     if (effectiveVisualConfig.leftBackground != null ||
                         effectiveVisualConfig.rightBackground != null)
-                      Positioned.fill(child: _buildBackground(context, progress)),
+                      Positioned.fill(
+                          child: _buildBackground(context, progress)),
                     if (confirmOverlay != null) confirmOverlay,
                     translatedChild,
-                    if (effectiveLeftSwipeConfig?.mode == LeftSwipeMode.reveal &&
+                    if (effectiveLeftSwipeConfig?.mode ==
+                            LeftSwipeMode.reveal &&
                         _state == SwipeState.revealed &&
                         effectiveLeftSwipeConfig!.actions.isNotEmpty)
                       _buildRevealPanel(width),

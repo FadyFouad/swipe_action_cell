@@ -20,6 +20,8 @@ export 'src/config/right_swipe_config.dart';
 export 'src/config/swipe_action_cell_theme.dart';
 export 'src/config/swipe_visual_config.dart';
 export 'src/controller/swipe_controller.dart';
+export 'src/controller/swipe_controller_provider.dart';
+export 'src/controller/swipe_group_controller.dart';
 export 'src/core/swipe_direction.dart';
 export 'src/core/swipe_progress.dart';
 export 'src/core/swipe_state.dart';

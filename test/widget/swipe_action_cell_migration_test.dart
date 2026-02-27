@@ -86,11 +86,44 @@ void main() {
       expect(find.text('LEFT_BG'), findsOneWidget);
     });
 
+    testWidgets('(c) leftSwipeConfig reveal mode shows action panel after swipe',
+        (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+          body: SwipeActionCell(
+            key: const Key('cell-reveal'),
+            leftSwipeConfig: LeftSwipeConfig(
+              mode: LeftSwipeMode.reveal,
+              actions: [
+                SwipeAction(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                  icon: const Icon(Icons.delete),
+                  onTap: () {},
+                ),
+              ],
+            ),
+            child: const SizedBox(
+                width: 400, height: 100, child: Text('cell')),
+          ),
+        ),
+      ));
+
+      // Swipe left far enough to trigger reveal
+      final gesture = await tester.startGesture(const Offset(300, 10));
+      await gesture.moveBy(const Offset(-260, 0));
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      // The SwipeActionPanel should now be visible in the tree
+      expect(find.byType(SwipeActionPanel), findsOneWidget);
+    });
+
     testWidgets('enabled: false passes through touches', (tester) async {
       bool tapped = false;
       await tester.pumpWidget(MaterialApp(
         home: Scaffold(
-          body: SwipeActionCell(key: Key("cell1"), 
+          body: SwipeActionCell(key: Key("cell1"),
             enabled: false,
             rightSwipeConfig: RightSwipeConfig(stepValue: 20, maxValue: 100),
             child: GestureDetector(
@@ -103,6 +136,17 @@ void main() {
 
       await tester.tap(find.text('cell'));
       expect(tapped, isTrue);
+    });
+
+    testWidgets('(f) no-config cell renders without error', (tester) async {
+      await tester.pumpWidget(const MaterialApp(
+        home: Scaffold(
+          body: SwipeActionCell(
+            child: Text('bare cell'),
+          ),
+        ),
+      ));
+      expect(find.text('bare cell'), findsOneWidget);
     });
   });
 }

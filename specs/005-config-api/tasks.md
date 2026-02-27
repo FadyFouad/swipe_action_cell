@@ -35,11 +35,11 @@ US1 config types must exist before the theme and widget can reference them.
 - [x] T002 [P] Write failing unit tests for `RightSwipeConfig` in `test/config/right_swipe_config_test.dart` (verify `const` constructability, `stepValue ≤ 0` assertion fires, `minValue ≥ maxValue` assertion fires, `copyWith` no-arg equality, `copyWith` with args changes only specified fields)
 - [x] T003 [P] Write failing unit tests for `LeftSwipeConfig` in `test/config/left_swipe_config_test.dart` (verify `const` constructability, `actionPanelWidth ≤ 0` assertion fires, reveal-mode with empty `actions` assertion fires with correct message, reveal-mode with non-empty `actions` passes, autoTrigger with empty `actions` passes, `copyWith` equality)
 - [x] T004 [P] Write failing unit tests for `SwipeVisualConfig` in `test/config/swipe_visual_config_test.dart` (verify `const` constructability, default `clipBehavior == Clip.hardEdge`, `copyWith` no-arg equality, `copyWith` with `clipBehavior` changes only that field)
-- [x] T005 [P] Write failing unit tests for `SwipeController` in `test/controller/swipe_controller_test.dart` (verify constructable, `dispose()` completes without error)
+- [x] T005 [P] Write failing unit tests for `SwipeController` in `test/controller/swipe_controller_test.dart` (verify constructable, `dispose()` completes without error) ⚠️ **SCOPE NOTE**: Implementation wrote the full F7 controller test suite (~270 lines: command routing, state machine, ChangeNotifier, lifecycle) in this file. The F6 stub test spec was exceeded. This is pre-work for 006-controller-group Phase A.
 - [x] T006 [P] Implement `RightSwipeConfig` in `lib/src/config/right_swipe_config.dart` using the signature from `contracts/config-api.md`; identical fields to `ProgressiveSwipeConfig` with improved assertion messages
 - [x] T007 [P] Implement `LeftSwipeConfig` in `lib/src/config/left_swipe_config.dart` using the signature from `contracts/config-api.md`; add new reveal-mode empty-actions assertion vs `IntentionalSwipeConfig`
 - [x] T008 [P] Implement `SwipeVisualConfig` in `lib/src/config/swipe_visual_config.dart`; `const` constructor, `final` fields, `copyWith`, `==`, `hashCode`
-- [x] T009 [P] Implement `SwipeController` stub in `lib/src/controller/swipe_controller.dart`; `extends ChangeNotifier`, dartdoc noting F007 reservation
+- [x] T009 [P] Implement `SwipeController` stub in `lib/src/controller/swipe_controller.dart`; `extends ChangeNotifier`, dartdoc noting F007 reservation ⚠️ **SCOPE NOTE**: Implementation delivered the full F7 SwipeController (openLeft/openRight/close/resetProgress/setProgress/attach/detach/reportState/reportProgress, state tracking, `_disposed` guard). Additionally, three F7-only files were created ahead of schedule: `swipe_cell_handle.dart`, `swipe_group_controller.dart`, `swipe_controller_provider.dart`. The barrel (T017) also exports the latter two. All code is correct per the 006-controller-group contracts; Phase A of 006 can be treated as pre-completed.
 
 **Checkpoint**: `flutter test test/config/ test/controller/` — all foundational type tests pass
 
@@ -58,7 +58,7 @@ confirm the cell behaves identically to the equivalent F001–F004 API via widge
 
 > **Write these tests FIRST — they must FAIL before T016 and T017 are implemented**
 
-- [x] T010 [US1] Write failing widget migration tests in `test/widget/swipe_action_cell_migration_test.dart` covering: (a) `rightSwipeConfig: RightSwipeConfig(...)` fires callbacks identical to old `rightSwipe: ProgressiveSwipeConfig(...)`, (b) `leftSwipeConfig: LeftSwipeConfig(mode: .autoTrigger, ...)` fires `onActionTriggered` identically to old `leftSwipe: IntentionalSwipeConfig(...)`, (c) `leftSwipeConfig: LeftSwipeConfig(mode: .reveal, ...)` opens panel identically to old `leftSwipe`, (d) `visualConfig: SwipeVisualConfig(leftBackground: ...)` renders the builder, (e) `enabled: false` passes through touches, (f) no-config cell renders without error
+- [x] T010 [US1] Write failing widget migration tests in `test/widget/swipe_action_cell_migration_test.dart` covering: (a) `rightSwipeConfig: RightSwipeConfig(...)` fires callbacks identical to old `rightSwipe: ProgressiveSwipeConfig(...)`, (b) `leftSwipeConfig: LeftSwipeConfig(mode: .autoTrigger, ...)` fires `onActionTriggered` identically to old `leftSwipe: IntentionalSwipeConfig(...)`, (c) `leftSwipeConfig: LeftSwipeConfig(mode: .reveal, ...)` opens panel identically to old `leftSwipe`, (d) `visualConfig: SwipeVisualConfig(leftBackground: ...)` renders the builder, (e) `enabled: false` passes through touches, (f) no-config cell renders without error ⚠️ **QA FIX**: Scenarios (c) and (f) were missing from the original implementation. Added by QA review.
 
 ### Implementation for User Story 1
 
@@ -70,7 +70,7 @@ confirm the cell behaves identically to the equivalent F001–F004 API via widge
 - [x] T016 [US1] Update all existing widget tests in `test/widget/swipe_action_cell_test.dart`, `test/widget/swipe_action_cell_progressive_test.dart`, `test/widget/swipe_action_cell_intentional_test.dart`, and `test/swipe_action_cell_test.dart` to use new parameter names (`rightSwipeConfig`, `leftSwipeConfig`, `visualConfig`)
 - [x] T017 [US1] Update barrel `lib/swipe_action_cell.dart` — remove exports for deleted files, add exports for `config/right_swipe_config.dart`, `config/left_swipe_config.dart`, `config/swipe_visual_config.dart`, `controller/swipe_controller.dart`
 - [x] T018 [US1] Delete `lib/src/actions/progressive/progressive_swipe_config.dart` and `lib/src/actions/intentional/intentional_swipe_config.dart`
-- [x] T019 [US1] Add migration entry to `CHANGELOG.md` documenting every renamed type and parameter per SC-007 requirements
+- [x] T019 [US1] Add migration entry to `CHANGELOG.md` documenting every renamed type and parameter per SC-007 requirements ⚠️ **QA FIX**: Original entry documented parameter renames only. Type renames (`ProgressiveSwipeConfig → RightSwipeConfig`, `IntentionalSwipeConfig → LeftSwipeConfig`) were missing, violating SC-007 and FR-013. Added by QA review.
 - [x] T020 [US1] Bump `version` in `pubspec.yaml` from `0.0.1` to `0.1.0`
 
 **Checkpoint**: `flutter analyze` zero warnings; `flutter test` all tests pass — US1 complete and independently verifiable

@@ -22,7 +22,7 @@ state). US4 requires US3 (SwipeGroupController must exist before the provider ca
 
 **Purpose**: Establish a known-good baseline before any changes.
 
-- [ ] T001 Run `flutter test` to confirm all 152 existing tests pass before starting; record baseline count
+- [X] T001 Run `flutter test` to confirm all 152 existing tests pass before starting; record baseline count
 
 ---
 
@@ -142,7 +142,7 @@ automatically. Scroll rapidly — no errors. No consumer-created `SwipeControlle
 **Purpose**: Final quality verification across all stories.
 
 - [ ] T014 [P] Update `lib/swipe_action_cell.dart` barrel — add `export 'src/controller/swipe_group_controller.dart'` and `export 'src/controller/swipe_controller_provider.dart'`; confirm `swipe_cell_handle.dart` is NOT exported; confirm `swipe_controller.dart` is still exported from F6
-- [ ] T015 [P] Verify the 2 existing stub tests in `test/controller/swipe_controller_test.dart` ("constructable", "dispose completes without error") still pass with the new full implementation; update test descriptions if needed to reflect F7 context
+- [ ] T015 [P] Verify the 2 existing stub tests in `test/controller/swipe_controller_test.dart` (\"constructable\", \"dispose completes without error\") still pass with the new full implementation; update test descriptions if needed to reflect F7 context
 - [ ] T016 [P] Run `flutter analyze` across the entire package; fix all warnings and errors until output is clean
 - [ ] T017 [P] Run `dart format --set-exit-if-changed .`; fix any formatting issues
 - [ ] T018 Run `flutter test` to confirm all tests pass (existing 152 + all new controller and provider tests)
