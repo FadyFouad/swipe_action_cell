@@ -22,9 +22,9 @@ Spring-based physics, an explicit state machine, and zero external runtime depen
 ### Phase 2 — Production Ready
 
 - [x] F6: Consolidated configuration API & app-wide theme
-- [ ] F9: Gesture arena & scroll conflict resolution
-- [ ] F7: `SwipeController` & group coordination
-- [ ] F8: Accessibility (semantics, keyboard nav, motion sensitivity)
+- [x] F9: Gesture arena & scroll conflict resolution
+- [x] F7: `SwipeController` & group coordination
+- [x] F8: Accessibility (semantics, keyboard nav, motion sensitivity)
 
 ### Phase 3 — Advanced
 
@@ -36,9 +36,8 @@ Spring-based physics, an explicit state machine, and zero external runtime depen
 ### Phase 4 — Polish
 
 - [ ] F14: Prebuilt zero-config templates
-- [ ] F15: RTL & localisation support
-- [ ] F16: Theme integration
-- [ ] F17: Migration guide & stable API
+- [ ] F15: Theme integration
+- [ ] F16: Migration guide & stable API
 
 ## Installation
 
@@ -321,8 +320,11 @@ SwipeActionCell(
 ```dart
 SwipeActionCell(
   gestureConfig: const SwipeGestureConfig(
-    deadZone: 12.0,            // px before direction locks
-    velocityThreshold: 700.0,  // px/s fling threshold
+    deadZone: 12.0,                   // px before direction locks
+    velocityThreshold: 700.0,         // px/s fling threshold
+    horizontalThresholdRatio: 1.5,    // H:V ratio to claim as horizontal
+    closeOnScroll: true,              // close reveal panel on parent scroll
+    respectEdgeGestures: true,        // yield to platform back-nav edge gesture
     enabledDirections: {SwipeDirection.right},
   ),
   animationConfig: const SwipeAnimationConfig(
@@ -353,10 +355,10 @@ SwipeActionCell(
 )
 ```
 
-| Preset | `deadZone` | `velocityThreshold` |
-|--------|-----------|---------------------|
-| `SwipeGestureConfig.tight()` | 24.0 px | 1000.0 px/s |
-| `SwipeGestureConfig.loose()` | 4.0 px | 300.0 px/s |
+| Preset | `deadZone` | `velocityThreshold` | `horizontalThresholdRatio` |
+|--------|-----------|---------------------|---------------------------|
+| `SwipeGestureConfig.tight()` | 24.0 px | 1000.0 px/s | 2.5 |
+| `SwipeGestureConfig.loose()` | 4.0 px | 300.0 px/s | 1.5 |
 
 | Preset | `completionSpring.stiffness` | `activationThreshold` |
 |--------|-----------------------------|-----------------------|
@@ -411,6 +413,246 @@ SwipeActionCell(
 
 ---
 
+## Programmatic Control
+
+Use `SwipeController` to open, close, or manipulate a cell from code — without a user gesture.
+
+```dart
+class _MyState extends State<MyWidget> {
+  final _controller = SwipeController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        SwipeActionCell(
+          controller: _controller,
+          leftSwipeConfig: LeftSwipeConfig(
+            mode: LeftSwipeMode.reveal,
+            actions: [
+              SwipeAction(
+                icon: const Icon(Icons.delete),
+                label: 'Delete',
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                onTap: () => deleteItem(),
+              ),
+            ],
+          ),
+          child: ListTile(title: Text('Controlled cell')),
+        ),
+        ElevatedButton(
+          onPressed: () => _controller.openLeft(),
+          child: const Text('Open panel'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            if (_controller.isOpen) _controller.close();
+          },
+          child: const Text('Close panel'),
+        ),
+      ],
+    );
+  }
+}
+```
+
+### Listening to state changes
+
+```dart
+_controller.addListener(() {
+  print('State: ${_controller.currentState}');
+  print('Open: ${_controller.isOpen}');
+  print('Progress: ${_controller.currentProgress}');
+});
+```
+
+### Programmatic progress control
+
+```dart
+// Reset the progressive counter to its initial value.
+_controller.resetProgress();
+
+// Jump to a specific value (clamped to min/max).
+_controller.setProgress(5.0);
+```
+
+---
+
+## Accordion / Group Behaviour
+
+Ensure only one cell is open at a time across a list. All cells in the group close
+automatically when any one of them opens.
+
+### Automatic (recommended for `ListView`)
+
+Wrap the list in `SwipeControllerProvider` — cells register and deregister themselves
+as they scroll in and out of view.
+
+```dart
+SwipeControllerProvider(
+  child: ListView.builder(
+    itemCount: items.length,
+    itemBuilder: (context, index) => SwipeActionCell(
+      leftSwipeConfig: LeftSwipeConfig(
+        mode: LeftSwipeMode.reveal,
+        actions: [
+          SwipeAction(
+            icon: const Icon(Icons.archive),
+            label: 'Archive',
+            backgroundColor: Colors.green,
+            foregroundColor: Colors.white,
+            onTap: () => archiveItem(items[index]),
+          ),
+        ],
+      ),
+      child: ListTile(title: Text(items[index].title)),
+    ),
+  ),
+)
+```
+
+### Manual (explicit controller management)
+
+```dart
+class _MyState extends State<MyWidget> {
+  final _group = SwipeGroupController();
+  late final List<SwipeController> _controllers;
+
+  @override
+  void initState() {
+    super.initState();
+    _controllers = List.generate(3, (_) => SwipeController());
+    for (final c in _controllers) {
+      _group.register(c);
+    }
+  }
+
+  @override
+  void dispose() {
+    _group.dispose();
+    for (final c in _controllers) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+}
+```
+
+### Close all programmatically
+
+```dart
+// Close every open cell in the group.
+_group.closeAll();
+
+// Close all except a specific controller.
+_group.closeAllExcept(_controllers[0]);
+```
+
+---
+
+## Accessibility & Screen Readers
+
+`SwipeActionCell` is fully accessible out of the box. When enabled, screen readers
+see custom actions in their action menu, and the cell responds to arrow keys.
+
+### Default behaviour (no config required)
+
+- Screen readers announce direction-adaptive action labels automatically (e.g.,
+  "Swipe right to progress" / "Swipe left for actions" in LTR;  reversed in RTL).
+- Arrow keys trigger the corresponding action (→ for forward, ← for backward in LTR).
+- **Escape** closes any open reveal panel and returns focus to the cell.
+- When the system `reduceMotion` / `disableAnimations` flag is set, all spring
+  animations are replaced with instant jumps.
+
+### Custom labels
+
+```dart
+SwipeActionCell(
+  semanticConfig: SwipeSemanticConfig(
+    cellLabel: SemanticLabel.string('Task item'),
+    rightSwipeLabel: SemanticLabel.string('Mark as done'),
+    leftSwipeLabel: SemanticLabel.string('Delete task'),
+    panelOpenLabel: SemanticLabel.string('Actions menu open'),
+  ),
+  rightSwipeConfig: RightSwipeConfig(
+    onSwipeCompleted: (value) => markDone(item),
+  ),
+  leftSwipeConfig: LeftSwipeConfig(
+    mode: LeftSwipeMode.reveal,
+    actions: [...],
+  ),
+  child: ListTile(title: Text(item.title)),
+)
+```
+
+### Locale-aware labels via builder
+
+```dart
+SwipeActionCell(
+  semanticConfig: SwipeSemanticConfig(
+    rightSwipeLabel: SemanticLabel.builder(
+      (context) => AppLocalizations.of(context)!.markDone,
+    ),
+    leftSwipeLabel: SemanticLabel.builder(
+      (context) => AppLocalizations.of(context)!.deleteItem,
+    ),
+    progressAnnouncementBuilder: (current, max) =>
+        '${current.toInt()} of ${max.toInt()} completed',
+  ),
+  child: ListTile(title: Text(item.title)),
+)
+```
+
+---
+
+## RTL & Bidirectional Support
+
+`SwipeActionCell` automatically mirrors its swipe semantics when placed in an RTL
+`Directionality` context. No extra configuration is needed for basic RTL support.
+
+### Semantic direction aliases (recommended for RTL-aware apps)
+
+Use `forwardSwipeConfig` / `backwardSwipeConfig` instead of `rightSwipeConfig` /
+`leftSwipeConfig`. These aliases adapt to the ambient text direction:
+
+- In **LTR**: `forwardSwipeConfig` → right swipe; `backwardSwipeConfig` → left swipe.
+- In **RTL**: `forwardSwipeConfig` → left swipe; `backwardSwipeConfig` → right swipe.
+
+```dart
+SwipeActionCell(
+  // Works correctly in both LTR and RTL without any additional changes.
+  forwardSwipeConfig: RightSwipeConfig(
+    onSwipeCompleted: (value) => incrementCounter(value),
+  ),
+  backwardSwipeConfig: LeftSwipeConfig(
+    mode: LeftSwipeMode.autoTrigger,
+    onActionTriggered: () => deleteItem(item),
+  ),
+  child: ListTile(title: Text(item.title)),
+)
+```
+
+### Force a specific direction
+
+Override the ambient `Directionality` for a single cell:
+
+```dart
+SwipeActionCell(
+  forceDirection: ForceDirection.ltr,   // or ForceDirection.rtl
+  rightSwipeConfig: RightSwipeConfig(...),
+  child: ListTile(title: Text('Always LTR')),
+)
+```
+
+---
+
 ## API Reference
 
 ### `SwipeActionCell`
@@ -420,10 +662,14 @@ SwipeActionCell(
 | `child` | `Widget` | required | The widget inside the cell |
 | `rightSwipeConfig` | `RightSwipeConfig?` | `null` | Progressive right-swipe config; `null` disables |
 | `leftSwipeConfig` | `LeftSwipeConfig?` | `null` | Intentional left-swipe config; `null` disables |
+| `forwardSwipeConfig` | `RightSwipeConfig?` | `null` | Direction-agnostic alias for right-swipe config (LTR) / left-swipe config (RTL); takes precedence over `rightSwipeConfig` |
+| `backwardSwipeConfig` | `LeftSwipeConfig?` | `null` | Direction-agnostic alias for left-swipe config (LTR) / right-swipe config (RTL); takes precedence over `leftSwipeConfig` |
+| `forceDirection` | `ForceDirection` | `.auto` | Override ambient `Directionality`; `.auto` reads from context |
+| `semanticConfig` | `SwipeSemanticConfig?` | `null` | Custom accessibility labels and screen reader announcements |
 | `gestureConfig` | `SwipeGestureConfig?` | theme → defaults | Dead zone, directions, fling velocity |
 | `animationConfig` | `SwipeAnimationConfig?` | theme → defaults | Spring physics, thresholds |
 | `visualConfig` | `SwipeVisualConfig?` | theme → none | Backgrounds, clip behavior, border radius |
-| `controller` | `SwipeController?` | `null` | Reserved for F7 programmatic control |
+| `controller` | `SwipeController?` | `null` | External controller for programmatic open/close/progress |
 | `onStateChanged` | `ValueChanged<SwipeState>?` | `null` | State machine transition callback |
 | `onProgressChanged` | `ValueChanged<SwipeProgress>?` | `null` | Per-frame drag progress |
 | `enabled` | `bool` | `true` | Enable/disable all swipe interactions |
@@ -519,6 +765,9 @@ Use `SwipeActionCellTheme.maybeOf(context)` to read the nearest theme instance.
 | `deadZone` | `double` | `12.0` | Min horizontal px before direction locks |
 | `enabledDirections` | `Set<SwipeDirection>` | both | Which directions are active |
 | `velocityThreshold` | `double` | `700.0` | px/s to trigger completion via fling |
+| `horizontalThresholdRatio` | `double` | `1.5` | Min H:V displacement ratio to claim as horizontal; must be `>= 1.0` |
+| `closeOnScroll` | `bool` | `true` | Close open reveal panel when the user begins scrolling a parent `Scrollable` |
+| `respectEdgeGestures` | `bool` | `true` | Yield to the 20 px platform back-navigation edge zone |
 
 Named presets: `SwipeGestureConfig.tight()`, `SwipeGestureConfig.loose()`
 
@@ -546,18 +795,84 @@ Named presets: `SwipeAnimationConfig.snappy()`, `SwipeAnimationConfig.smooth()`
 
 ### `SwipeController`
 
-A placeholder `ChangeNotifier` reserved for F7 group coordination. Constructing, storing,
-and disposing a controller has no observable effect in the current release.
+Controls a single attached `SwipeActionCell` programmatically. Implements `ChangeNotifier`.
 
-```dart
-final controller = SwipeController();
+**Observable properties:**
 
-@override
-void dispose() {
-  controller.dispose();
-  super.dispose();
-}
-```
+| Property | Type | Description |
+|----------|------|-------------|
+| `currentState` | `SwipeState` | The cell's current state machine state |
+| `currentProgress` | `double` | Cumulative progressive value (`rightSwipeConfig` only) |
+| `isOpen` | `bool` | `true` when `currentState == SwipeState.revealed` |
+| `openDirection` | `SwipeDirection?` | Direction the cell is open in; `null` when closed |
+
+**Commands:**
+
+| Method | Description |
+|--------|-------------|
+| `openLeft()` | Trigger a left-swipe open (asserts from `idle` state) |
+| `openRight()` | Trigger a right-swipe increment (asserts from `idle` state) |
+| `close()` | Snap the cell closed (valid from `revealed` or `animatingToOpen`) |
+| `resetProgress()` | Reset the progressive value to `initialValue` |
+| `setProgress(double value)` | Set the progressive value, clamped to `[minValue, maxValue]` |
+| `dispose()` | Release resources; call in `State.dispose` |
+
+### `SwipeGroupController`
+
+Coordinates multiple `SwipeController` instances for accordion behaviour.
+
+| Method | Description |
+|--------|-------------|
+| `register(SwipeController)` | Add a controller to the group |
+| `unregister(SwipeController)` | Remove a controller from the group |
+| `closeAll()` | Close every open registered cell |
+| `closeAllExcept(SwipeController)` | Close all open cells except the given controller |
+| `dispose()` | Remove all listeners and release resources |
+
+### `SwipeControllerProvider`
+
+An `InheritedWidget` that automatically registers and deregisters `SwipeActionCell`
+descendants with a shared `SwipeGroupController`.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `child` | `Widget` | required | The subtree containing `SwipeActionCell` widgets |
+| `groupController` | `SwipeGroupController?` | `null` | External group controller; when `null`, an internal one is created and managed automatically |
+
+Use `SwipeControllerProvider.maybeGroupOf(context)` to read the nearest group controller.
+
+### `SwipeSemanticConfig`
+
+Configures accessibility labels and screen reader announcements for a single `SwipeActionCell`.
+All fields are optional — omitted fields fall back to direction-adaptive built-in defaults.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `cellLabel` | `SemanticLabel?` | `null` | Label announced when the screen reader focuses the cell |
+| `rightSwipeLabel` | `SemanticLabel?` | adaptive | Label for the forward-swipe custom action in the screen reader menu |
+| `leftSwipeLabel` | `SemanticLabel?` | adaptive | Label for the backward-swipe custom action in the screen reader menu |
+| `panelOpenLabel` | `SemanticLabel?` | `"Action panel open"` | Announcement spoken when the reveal panel opens |
+| `progressAnnouncementBuilder` | `String Function(double current, double max)?` | auto | Override the automatic "Progress incremented to N of M" announcement |
+
+### `SemanticLabel`
+
+A const-constructable wrapper for an accessibility label that is either a static string
+or a context-aware builder.
+
+| Constructor | Description |
+|-------------|-------------|
+| `SemanticLabel.string(String value)` | Static label string |
+| `SemanticLabel.builder(String Function(BuildContext) builder)` | Locale-aware label resolved at build time |
+
+### `ForceDirection`
+
+Controls how `SwipeActionCell` resolves its effective text direction.
+
+| Value | Description |
+|-------|-------------|
+| `ForceDirection.auto` | Reads `Directionality.of(context)` (default) |
+| `ForceDirection.ltr` | Forces left-to-right regardless of ambient directionality |
+| `ForceDirection.rtl` | Forces right-to-left regardless of ambient directionality |
 
 ---
 
