@@ -23,6 +23,9 @@ import '../core/swipe_direction.dart';
 import '../core/swipe_direction_resolver.dart';
 import '../core/swipe_progress.dart';
 import '../core/swipe_state.dart';
+import '../core/swipe_zone.dart';
+import '../zones/zone_background.dart';
+import '../zones/zone_resolver.dart';
 import '../gesture/swipe_gesture_config.dart';
 import '../scroll/swipe_gesture_recognizer.dart';
 
@@ -158,6 +161,9 @@ class SwipeActionCellState extends State<SwipeActionCell>
   bool _isPostIncrementSnapBack = false;
   bool _swipeStartedFired = false;
   bool _hapticThresholdFired = false;
+  int _lastHapticZoneIndex = -1;
+  int _currentZoneIndex = -1;
+  SwipeZone? _activeZoneAtRelease;
 
   // F7 controller fields.
   /// Internal controller created when [SwipeActionCell.controller] is null.
@@ -222,6 +228,31 @@ class SwipeActionCellState extends State<SwipeActionCell>
   /// The resolved visual config after applying the theme/local/default cascade.
   late SwipeVisualConfig effectiveVisualConfig;
 
+  List<SwipeZone>? _effectiveForwardZones() =>
+      _resolvedForwardConfig?.zones?.isNotEmpty == true
+          ? _resolvedForwardConfig!.zones
+          : null;
+
+  List<SwipeZone>? _effectiveBackwardZones() =>
+      _resolvedBackwardConfig?.zones?.isNotEmpty == true
+          ? _resolvedBackwardConfig!.zones
+          : null;
+
+  void _fireZoneHaptic(SwipeZoneHaptic? pattern) {
+    if (pattern == null) return;
+    switch (pattern) {
+      case SwipeZoneHaptic.light:
+        HapticFeedback.lightImpact();
+        break;
+      case SwipeZoneHaptic.medium:
+        HapticFeedback.mediumImpact();
+        break;
+      case SwipeZoneHaptic.heavy:
+        HapticFeedback.heavyImpact();
+        break;
+    }
+  }
+
   /// A [ValueListenable] that emits the current swipe offset on every frame.
   ValueListenable<double> get swipeOffsetListenable => _controller;
 
@@ -258,6 +289,15 @@ class SwipeActionCellState extends State<SwipeActionCell>
     effectiveLeftSwipeConfig = widget.leftSwipeConfig ?? theme?.leftSwipeConfig;
     effectiveVisualConfig =
         widget.visualConfig ?? theme?.visualConfig ?? const SwipeVisualConfig();
+
+    if (kDebugMode) {
+      if (effectiveLeftSwipeConfig?.zones?.isNotEmpty == true) {
+        assertZonesValid(effectiveLeftSwipeConfig!.zones!);
+      }
+      if (effectiveRightSwipeConfig?.zones?.isNotEmpty == true) {
+        assertZonesValid(effectiveRightSwipeConfig!.zones!, progressive: true);
+      }
+    }
   }
 
   @override
@@ -451,8 +491,17 @@ class SwipeActionCellState extends State<SwipeActionCell>
   void _applyIntentionalAction() {
     final config = _resolvedBackwardConfig!;
     _awaitingConfirmation = false;
-    if (config.enableHaptic) HapticFeedback.mediumImpact();
-    config.onActionTriggered?.call();
+
+    // F009: Use zone action if present
+    if (_activeZoneAtRelease != null && _dragIsBackward) {
+      _fireZoneHaptic(_activeZoneAtRelease!.hapticPattern ??
+          (config.enableHaptic ? SwipeZoneHaptic.medium : null));
+      _activeZoneAtRelease!.onActivated?.call();
+      _activeZoneAtRelease = null;
+    } else {
+      if (config.enableHaptic) HapticFeedback.mediumImpact();
+      config.onActionTriggered?.call();
+    }
     _applyPostActionBehavior();
   }
 
@@ -498,8 +547,17 @@ class SwipeActionCellState extends State<SwipeActionCell>
   void _applyProgressiveIncrement() {
     final config = _resolvedForwardConfig!;
     final current = _progressValueNotifier!.value;
-    final result =
-        computeNextProgressiveValue(current: current, config: config);
+
+    // F009: Use zone step value if present
+    final step = (_activeZoneAtRelease != null && _dragIsForward)
+        ? _activeZoneAtRelease!.stepValue
+        : null;
+
+    final result = computeNextProgressiveValue(
+      current: current,
+      config: config,
+      stepOverride: step,
+    );
 
     if (result.nextValue != current) {
       _progressValueNotifier!.value = result.nextValue;
@@ -508,7 +566,15 @@ class SwipeActionCellState extends State<SwipeActionCell>
     if (result.hitMax) {
       config.onMaxReached?.call();
     }
-    if (config.enableHaptic) HapticFeedback.mediumImpact();
+
+    if (_activeZoneAtRelease != null && _dragIsForward) {
+      _fireZoneHaptic(_activeZoneAtRelease!.hapticPattern ??
+          (config.enableHaptic ? SwipeZoneHaptic.medium : null));
+      _activeZoneAtRelease = null;
+    } else {
+      if (config.enableHaptic) HapticFeedback.mediumImpact();
+    }
+
     config.onSwipeCompleted?.call(result.nextValue);
     // F8: announce progress after increment.
     _announceProgress(result.nextValue, config.maxValue);
@@ -556,6 +622,9 @@ class SwipeActionCellState extends State<SwipeActionCell>
     _isPostActionSnapBack = false;
     _swipeStartedFired = false;
     _hapticThresholdFired = false;
+    _lastHapticZoneIndex = -1;
+    _currentZoneIndex = -1;
+    _activeZoneAtRelease = null;
   }
 
   void _handleDragUpdate(DragUpdateDetails details, double widgetWidth) {
@@ -624,13 +693,33 @@ class SwipeActionCellState extends State<SwipeActionCell>
       return;
     }
     final ratio = _controller.value.abs() / maxT;
+
+    final forwardZones = _effectiveForwardZones();
+    final backwardZones = _effectiveBackwardZones();
+    final activeForwardZone = (forwardZones != null && _dragIsForward)
+        ? resolveActiveZone(forwardZones, ratio)
+        : null;
+    final activeBackwardZone = (backwardZones != null && _dragIsBackward)
+        ? resolveActiveZone(backwardZones, ratio)
+        : null;
+    _activeZoneAtRelease = activeForwardZone ?? activeBackwardZone;
+
     final isFling =
         velocity.abs() >= effectiveGestureConfig.velocityThreshold &&
             (_lockedDirection == SwipeDirection.right
                 ? velocity > 0
                 : velocity < 0);
-    final shouldComplete =
-        isFling || ratio >= effectiveAnimationConfig.activationThreshold;
+
+    final bool shouldComplete;
+    if (_activeZoneAtRelease != null) {
+      shouldComplete = true;
+    } else if ((_dragIsForward && forwardZones != null) ||
+        (_dragIsBackward && backwardZones != null)) {
+      shouldComplete = isFling;
+    } else {
+      shouldComplete =
+          isFling || ratio >= effectiveAnimationConfig.activationThreshold;
+    }
     if (shouldComplete) {
       _updateState(SwipeState.animatingToOpen);
       _animateToOpen(_controller.value,
@@ -750,6 +839,21 @@ class SwipeActionCellState extends State<SwipeActionCell>
     // backward drag shows leftBackground, regardless of physical direction.
     final isForward =
         progress.direction == SwipeDirectionResolver.forwardPhysical(_isRtl);
+
+    // F009: Route to ZoneAwareBackground if zones are configured.
+    final zones =
+        isForward ? _effectiveForwardZones() : _effectiveBackwardZones();
+    if (zones != null && zones.isNotEmpty) {
+      final transitionStyle = isForward
+          ? _resolvedForwardConfig?.zoneTransitionStyle
+          : _resolvedBackwardConfig?.zoneTransitionStyle;
+      return ZoneAwareBackground(
+        zones: zones,
+        progress: progress,
+        transitionStyle: transitionStyle ?? ZoneTransitionStyle.instant,
+      );
+    }
+
     final builder = isForward
         ? effectiveVisualConfig.rightBackground
         : effectiveVisualConfig.leftBackground;
@@ -894,7 +998,8 @@ class SwipeActionCellState extends State<SwipeActionCell>
             ?.call(current, max) ??
         'Progress incremented to ${current.toStringAsFixed(0)} of ${max.toStringAsFixed(0)}';
     // ignore: deprecated_member_use
-    SemanticsService.announce(msg, Directionality.of(context));
+    // ignore: deprecated_member_use
+                            SemanticsService.announce(msg, Directionality.of(context));
   }
 
   /// Announces panel open via [SemanticsService].
@@ -903,7 +1008,8 @@ class SwipeActionCellState extends State<SwipeActionCell>
     final raw = widget.semanticConfig?.panelOpenLabel?.resolve(context);
     final msg = (raw != null && raw.isNotEmpty) ? raw : 'Action panel open';
     // ignore: deprecated_member_use
-    SemanticsService.announce(msg, Directionality.of(context));
+    // ignore: deprecated_member_use
+                            SemanticsService.announce(msg, Directionality.of(context));
   }
 
   /// Handles keyboard events for arrow-key navigation and Escape.
@@ -976,17 +1082,49 @@ class SwipeActionCellState extends State<SwipeActionCell>
                           ratio >= effectiveAnimationConfig.activationThreshold,
                       rawOffset: offset,
                     );
+                    // F009: Zone detection for haptic and semantics
+                    if (_state == SwipeState.dragging) {
+                      final zones = _dragIsForward
+                          ? _effectiveForwardZones()
+                          : _effectiveBackwardZones();
+                      if (zones != null && zones.isNotEmpty) {
+                        final newZoneIndex =
+                            resolveActiveZoneIndex(zones, ratio);
+
+                        // Haptic: Forward-only crossing
+                        if (newZoneIndex > _lastHapticZoneIndex &&
+                            newZoneIndex >= 0) {
+                          _fireZoneHaptic(zones[newZoneIndex].hapticPattern);
+                        }
+                        _lastHapticZoneIndex = newZoneIndex;
+
+                        // Semantics: Any change in active zone
+                        if (newZoneIndex != _currentZoneIndex) {
+                          _currentZoneIndex = newZoneIndex;
+                          if (newZoneIndex >= 0) {
+                            // ignore: deprecated_member_use
+                            SemanticsService.announce(
+                              zones[newZoneIndex].semanticLabel,
+                              Directionality.of(context),
+                            );
+                          }
+                        }
+                      }
+                    }
+
                     if (_dragIsForward &&
                         _resolvedForwardConfig?.enableHaptic == true &&
                         progress.isActivated &&
-                        !_hapticThresholdFired) {
+                        !_hapticThresholdFired &&
+                        _effectiveForwardZones() == null) {
                       HapticFeedback.lightImpact();
                       _hapticThresholdFired = true;
                     }
                     if (_dragIsBackward &&
                         _resolvedBackwardConfig?.enableHaptic == true &&
                         progress.isActivated &&
-                        !_hapticThresholdFired) {
+                        !_hapticThresholdFired &&
+                        _effectiveBackwardZones() == null) {
                       HapticFeedback.lightImpact();
                       _hapticThresholdFired = true;
                     }

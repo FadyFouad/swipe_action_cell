@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/widgets.dart';
 
 import '../actions/progressive/overflow_behavior.dart';
 import '../actions/progressive/progress_indicator_config.dart';
+import '../core/swipe_zone.dart';
 import '../core/typedefs.dart';
 
 /// Configuration for right-swipe progressive (incremental) action behavior.
@@ -31,14 +31,26 @@ class RightSwipeConfig {
     this.onSwipeStarted,
     this.onSwipeCompleted,
     this.onSwipeCancelled,
+    this.zones,
+    this.zoneTransitionStyle = ZoneTransitionStyle.instant,
   })  : assert(stepValue > 0.0, 'stepValue must be > 0, got $stepValue'),
         assert(
           minValue < maxValue,
           'minValue ($minValue) must be < maxValue ($maxValue)',
+        ),
+        assert(
+          zones == null || zones.length <= 4,
+          'zones must have at most 4 entries for the right swipe direction.',
         );
 
   /// The externally-managed progress value (controlled mode).
   final double? value;
+
+  /// When non-null and non-empty, overrides single-threshold behavior.
+  final List<SwipeZone>? zones;
+
+  /// Visual transition between zone backgrounds.
+  final ZoneTransitionStyle zoneTransitionStyle;
 
   /// The initial cumulative value in uncontrolled mode.
   final double initialValue;
@@ -99,6 +111,8 @@ class RightSwipeConfig {
     VoidCallback? onSwipeStarted,
     ValueChanged<double>? onSwipeCompleted,
     VoidCallback? onSwipeCancelled,
+    List<SwipeZone>? zones,
+    ZoneTransitionStyle? zoneTransitionStyle,
   }) {
     return RightSwipeConfig(
       value: value ?? this.value,
@@ -118,6 +132,8 @@ class RightSwipeConfig {
       onSwipeStarted: onSwipeStarted ?? this.onSwipeStarted,
       onSwipeCompleted: onSwipeCompleted ?? this.onSwipeCompleted,
       onSwipeCancelled: onSwipeCancelled ?? this.onSwipeCancelled,
+      zones: zones ?? this.zones,
+      zoneTransitionStyle: zoneTransitionStyle ?? this.zoneTransitionStyle,
     );
   }
 
@@ -140,7 +156,9 @@ class RightSwipeConfig {
           onMaxReached == other.onMaxReached &&
           onSwipeStarted == other.onSwipeStarted &&
           onSwipeCompleted == other.onSwipeCompleted &&
-          onSwipeCancelled == other.onSwipeCancelled;
+          onSwipeCancelled == other.onSwipeCancelled &&
+          listEquals(zones, other.zones) &&
+          zoneTransitionStyle == other.zoneTransitionStyle;
 
   @override
   int get hashCode => Object.hashAll([
@@ -159,5 +177,7 @@ class RightSwipeConfig {
         onSwipeStarted,
         onSwipeCompleted,
         onSwipeCancelled,
+        zones,
+        zoneTransitionStyle,
       ]);
 }

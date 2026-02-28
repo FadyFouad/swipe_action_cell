@@ -27,6 +27,7 @@ export 'src/core/swipe_direction.dart';
 export 'src/core/swipe_direction_resolver.dart';
 export 'src/core/swipe_progress.dart';
 export 'src/core/swipe_state.dart';
+export 'src/core/swipe_zone.dart';
 export 'src/core/typedefs.dart';
 export 'src/gesture/swipe_gesture_config.dart';
 export 'src/visual/swipe_action_background.dart';

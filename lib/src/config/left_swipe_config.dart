@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../actions/intentional/left_swipe_mode.dart';
 import '../actions/intentional/post_action_behavior.dart';
 import '../actions/intentional/swipe_action.dart';
+import '../core/swipe_zone.dart';
 
 /// Configuration for left-swipe intentional (one-shot) action behavior.
 ///
@@ -25,6 +26,8 @@ class LeftSwipeConfig {
     this.onSwipeCancelled,
     this.onPanelOpened,
     this.onPanelClosed,
+    this.zones,
+    this.zoneTransitionStyle = ZoneTransitionStyle.instant,
   })  : assert(
           actionPanelWidth == null || actionPanelWidth > 0,
           'actionPanelWidth must be > 0 when provided, got $actionPanelWidth',
@@ -33,10 +36,20 @@ class LeftSwipeConfig {
           mode != LeftSwipeMode.reveal || actions.length > 0,
           'LeftSwipeConfig in reveal mode requires at least one action, '
           'but actions is empty.',
+        ),
+        assert(
+          zones == null || zones.length <= 4,
+          'zones must have at most 4 entries for the left swipe direction.',
         );
 
   /// The interaction mode: [LeftSwipeMode.autoTrigger] or [LeftSwipeMode.reveal].
   final LeftSwipeMode mode;
+
+  /// When non-null and non-empty, overrides single-threshold behavior.
+  final List<SwipeZone>? zones;
+
+  /// Visual transition between zone backgrounds.
+  final ZoneTransitionStyle zoneTransitionStyle;
 
   /// The action buttons displayed in the panel. Used only in [LeftSwipeMode.reveal].
   ///
@@ -83,6 +96,8 @@ class LeftSwipeConfig {
     VoidCallback? onSwipeCancelled,
     VoidCallback? onPanelOpened,
     VoidCallback? onPanelClosed,
+    List<SwipeZone>? zones,
+    ZoneTransitionStyle? zoneTransitionStyle,
   }) {
     return LeftSwipeConfig(
       mode: mode ?? this.mode,
@@ -95,6 +110,8 @@ class LeftSwipeConfig {
       onSwipeCancelled: onSwipeCancelled ?? this.onSwipeCancelled,
       onPanelOpened: onPanelOpened ?? this.onPanelOpened,
       onPanelClosed: onPanelClosed ?? this.onPanelClosed,
+      zones: zones ?? this.zones,
+      zoneTransitionStyle: zoneTransitionStyle ?? this.zoneTransitionStyle,
     );
   }
 
@@ -112,7 +129,9 @@ class LeftSwipeConfig {
           onActionTriggered == other.onActionTriggered &&
           onSwipeCancelled == other.onSwipeCancelled &&
           onPanelOpened == other.onPanelOpened &&
-          onPanelClosed == other.onPanelClosed;
+          onPanelClosed == other.onPanelClosed &&
+          listEquals(zones, other.zones) &&
+          zoneTransitionStyle == other.zoneTransitionStyle;
 
   @override
   int get hashCode => Object.hashAll([
@@ -126,5 +145,7 @@ class LeftSwipeConfig {
         onSwipeCancelled,
         onPanelOpened,
         onPanelClosed,
+        zones,
+        zoneTransitionStyle,
       ]);
 }

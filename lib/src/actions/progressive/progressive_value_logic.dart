@@ -8,10 +8,11 @@ import 'overflow_behavior.dart';
 ({double nextValue, bool hitMax}) computeNextProgressiveValue({
   required double current,
   required RightSwipeConfig config,
+  double? stepOverride,
 }) {
-  final step = config.dynamicStep != null
+  final step = stepOverride ?? (config.dynamicStep != null
       ? config.dynamicStep!(current)
-      : config.stepValue;
+      : config.stepValue);
 
   if (step <= 0) return (nextValue: current, hitMax: false);
 

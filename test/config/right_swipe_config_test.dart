@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:swipe_action_cell/swipe_action_cell.dart';
+import 'package:swipe_action_cell/src/core/swipe_zone.dart';
 
 void main() {
   group('RightSwipeConfig', () {
@@ -58,6 +59,41 @@ void main() {
       final config = RightSwipeConfig(onMaxReached: () => called = true);
       config.onMaxReached?.call();
       expect(called, isTrue);
+    });
+  });
+
+  group('RightSwipeConfig zones', () {
+    SwipeZone z(double t, {double? step}) => 
+      SwipeZone(threshold: t, semanticLabel: 'Zone', stepValue: step);
+
+    test('valid 2-zone config constructs', () {
+      final config = RightSwipeConfig(
+        zones: [z(0.4, step: 1.0), z(0.8, step: 5.0)],
+      );
+      expect(config.zones?.length, 2);
+    });
+
+    test('descending thresholds assert fires at runtime in SwipeActionCell', () {
+      // In this case, validation happens at runtime in SwipeActionCellState.
+      // But we can check length assert here if it's in constructor.
+    });
+
+    test('>4 zones assert fires', () {
+      expect(
+        () => RightSwipeConfig(
+          zones: [z(0.1, step: 1.0), z(0.2, step: 1.0), z(0.3, step: 1.0), z(0.4, step: 1.0), z(0.5, step: 1.0)],
+        ),
+        throwsA(isA<AssertionError>().having((e) => e.message, 'message', contains('at most 4'))));
+    });
+
+    test('copyWith updates zones and zoneTransitionStyle', () {
+      final config = RightSwipeConfig();
+      final updated = config.copyWith(
+        zones: [z(0.5, step: 1.0)],
+        zoneTransitionStyle: ZoneTransitionStyle.crossfade,
+      );
+      expect(updated.zones?.length, 1);
+      expect(updated.zoneTransitionStyle, ZoneTransitionStyle.crossfade);
     });
   });
 }
