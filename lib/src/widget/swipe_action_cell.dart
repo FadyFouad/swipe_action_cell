@@ -24,10 +24,10 @@ import '../core/swipe_direction_resolver.dart';
 import '../core/swipe_progress.dart';
 import '../core/swipe_state.dart';
 import '../core/swipe_zone.dart';
-import '../zones/zone_background.dart';
-import '../zones/zone_resolver.dart';
 import '../gesture/swipe_gesture_config.dart';
 import '../scroll/swipe_gesture_recognizer.dart';
+import '../zones/zone_background.dart';
+import '../zones/zone_resolver.dart';
 
 /// A widget that wraps any child and provides spring-based horizontal swipe
 /// interaction with asymmetric left/right semantics.
@@ -999,7 +999,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
         'Progress incremented to ${current.toStringAsFixed(0)} of ${max.toStringAsFixed(0)}';
     // ignore: deprecated_member_use
     // ignore: deprecated_member_use
-                            SemanticsService.announce(msg, Directionality.of(context));
+    SemanticsService.announce(msg, Directionality.of(context));
   }
 
   /// Announces panel open via [SemanticsService].
@@ -1009,7 +1009,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
     final msg = (raw != null && raw.isNotEmpty) ? raw : 'Action panel open';
     // ignore: deprecated_member_use
     // ignore: deprecated_member_use
-                            SemanticsService.announce(msg, Directionality.of(context));
+    SemanticsService.announce(msg, Directionality.of(context));
   }
 
   /// Handles keyboard events for arrow-key navigation and Escape.
@@ -1151,8 +1151,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
                             offset < -0.5 &&
                             (_state == SwipeState.revealed ||
                                 ((_state == SwipeState.dragging ||
-                                        _state ==
-                                            SwipeState.animatingToOpen) &&
+                                        _state == SwipeState.animatingToOpen) &&
                                     _dragIsBackward)))
                           _buildRevealPanel(width),
                         if (confirmOverlay != null) confirmOverlay,
