@@ -129,7 +129,9 @@ class FeedbackDispatcher {
   void _maybeFireAudio(SwipeFeedbackEvent event) {
     if (_config == null ||
         !_config.enableAudio ||
-        _config.onShouldPlaySound == null) return;
+        _config.onShouldPlaySound == null) {
+      return;
+    }
 
     final soundEvent = _soundEventFor(event);
     if (soundEvent != null) {
