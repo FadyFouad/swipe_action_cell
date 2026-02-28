@@ -8,12 +8,15 @@ import 'package:swipe_action_cell/src/core/swipe_state.dart';
 // ---------------------------------------------------------------------------
 
 class _FakeHandle implements SwipeCellHandle {
+  int closeCalls = 0;
   @override
   void executeOpenLeft() {}
   @override
   void executeOpenRight() {}
   @override
-  void executeClose() {}
+  void executeClose() {
+    closeCalls++;
+  }
   @override
   void executeResetProgress() {}
   @override
@@ -21,23 +24,20 @@ class _FakeHandle implements SwipeCellHandle {
 }
 
 // ---------------------------------------------------------------------------
-// Helper: create a controller that appears to be in revealed (open) state
+// Helpers: create a controller + handle pair
 // ---------------------------------------------------------------------------
 
-SwipeController _openController() {
+({SwipeController controller, _FakeHandle handle}) _createCell() {
   final c = SwipeController();
   final h = _FakeHandle();
   c.attach(h);
-  c.reportState(SwipeState.revealed, 0.0, SwipeDirection.left);
-  return c;
+  return (controller: c, handle: h);
 }
 
-SwipeController _idleController() {
-  final c = SwipeController();
-  final h = _FakeHandle();
-  c.attach(h);
-  // State is idle by default.
-  return c;
+({SwipeController controller, _FakeHandle handle}) _openCell() {
+  final pair = _createCell();
+  pair.controller.reportState(SwipeState.revealed, 0.0, SwipeDirection.left);
+  return pair;
 }
 
 void main() {
@@ -51,11 +51,11 @@ void main() {
 
     // (a) register() is idempotent
     test('register() is idempotent — no duplicate entries', () {
-      final c = _idleController();
-      addTearDown(c.dispose);
+      final cell = _createCell();
+      addTearDown(cell.controller.dispose);
 
-      group.register(c);
-      group.register(c); // should be no-op
+      group.register(cell.controller);
+      group.register(cell.controller); // should be no-op
 
       // If accordion fires, it closes only one other cell.
       // We verify no error and that register is idempotent by closing all.
@@ -64,68 +64,59 @@ void main() {
 
     // (b) unregister() is idempotent
     test('unregister() is idempotent — no-op on unknown controller', () {
-      final c = _idleController();
-      addTearDown(c.dispose);
+      final cell = _createCell();
+      addTearDown(cell.controller.dispose);
 
-      expect(() => group.unregister(c), returnsNormally); // not registered
-      group.register(c);
-      group.unregister(c);
+      expect(() => group.unregister(cell.controller), returnsNormally); // not registered
+      group.register(cell.controller);
+      group.unregister(cell.controller);
       expect(
-          () => group.unregister(c), returnsNormally); // already unregistered
+          () => group.unregister(cell.controller), returnsNormally); // already unregistered
     });
 
     // (c) accordion: when A opens, B's close() is called
     test('accordion: when A opens (animatingToOpen), B.close() is called', () {
-      final a = _idleController();
-      final b = _openController();
-      addTearDown(a.dispose);
-      addTearDown(b.dispose);
+      final a = _createCell();
+      final b = _openCell();
+      addTearDown(a.controller.dispose);
+      addTearDown(b.controller.dispose);
 
-      group.register(a);
-      group.register(b);
+      group.register(a.controller);
+      group.register(b.controller);
 
       // Simulate A opening — B should get closed.
-      a.reportState(SwipeState.animatingToOpen, 0.0, SwipeDirection.left);
+      a.controller.reportState(SwipeState.animatingToOpen, 0.0, SwipeDirection.left);
 
-      // B is open (revealed), so after accordion fires it should be closing.
-      // The accordion calls b.close() which calls executeClose on b's handle.
-      // Since b is open, close() is valid and would transition it.
-      // We can't check widget state in a unit test, but verify no crash and
-      // that b's state changes (close() triggers reportState back via widget,
-      // but in unit tests the fake handle doesn't actually animate — so we
-      // check that b.isOpen is transitioning).
-      // The key property: no exception should be thrown.
-      expect(() {
-        a.reportState(SwipeState.animatingToOpen, 0.0, SwipeDirection.left);
-      }, returnsNormally);
+      expect(b.handle.closeCalls, 1);
     });
 
     // (d) accordion: when B opens, A's close() is called
     test('accordion: when B opens, A.close() is called', () {
-      final a = _openController();
-      final b = _idleController();
-      addTearDown(a.dispose);
-      addTearDown(b.dispose);
+      final a = _openCell();
+      final b = _createCell();
+      addTearDown(a.controller.dispose);
+      addTearDown(b.controller.dispose);
 
-      group.register(a);
-      group.register(b);
+      group.register(a.controller);
+      group.register(b.controller);
 
-      expect(() {
-        b.reportState(SwipeState.animatingToOpen, 0.0, SwipeDirection.left);
-      }, returnsNormally);
+      b.controller.reportState(SwipeState.animatingToOpen, 0.0, SwipeDirection.left);
+      expect(a.handle.closeCalls, 1);
     });
 
     // (e) closeAll() calls close() on every open controller
     test('closeAll() closes all open controllers', () {
-      final a = _openController();
-      final b = _openController();
-      addTearDown(a.dispose);
-      addTearDown(b.dispose);
+      final a = _openCell();
+      final b = _openCell();
+      addTearDown(a.controller.dispose);
+      addTearDown(b.controller.dispose);
 
-      group.register(a);
-      group.register(b);
+      group.register(a.controller);
+      group.register(b.controller);
 
-      expect(() => group.closeAll(), returnsNormally);
+      group.closeAll();
+      expect(a.handle.closeCalls, 1);
+      expect(b.handle.closeCalls, 1);
     });
 
     // (f) closeAll() is safe when no cells are open
@@ -135,54 +126,52 @@ void main() {
 
     // (g) closeAllExcept(A) closes B and C but not A
     test('closeAllExcept(A) closes B and C but not A', () {
-      final a = _openController();
-      final b = _openController();
-      final c = _openController();
-      addTearDown(a.dispose);
-      addTearDown(b.dispose);
-      addTearDown(c.dispose);
+      final a = _openCell();
+      final b = _openCell();
+      final c = _openCell();
+      addTearDown(a.controller.dispose);
+      addTearDown(b.controller.dispose);
+      addTearDown(c.controller.dispose);
 
-      group.register(a);
-      group.register(b);
-      group.register(c);
+      group.register(a.controller);
+      group.register(b.controller);
+      group.register(c.controller);
 
       // After closeAllExcept(a), only a should still be open.
-      group.closeAllExcept(a);
+      group.closeAllExcept(a.controller);
 
-      // a is excluded from the close, so it should still be in revealed state.
-      expect(a.isOpen, isTrue);
+      expect(a.handle.closeCalls, 0);
+      expect(b.handle.closeCalls, 1);
+      expect(c.handle.closeCalls, 1);
     });
 
     // (h) unregistered controller is not closed during accordion trigger
     test('unregistered controller is not closed during accordion trigger', () {
-      final a = _idleController();
-      final b = _openController();
-      addTearDown(a.dispose);
-      addTearDown(b.dispose);
+      final a = _createCell();
+      final b = _openCell();
+      addTearDown(a.controller.dispose);
+      addTearDown(b.controller.dispose);
 
-      group.register(a);
-      group.register(b);
-      group.unregister(b); // unregister b before A opens
+      group.register(a.controller);
+      group.register(b.controller);
+      group.unregister(b.controller); // unregister b before A opens
 
       // When A opens, the group should not attempt to close B.
-      expect(() {
-        a.reportState(SwipeState.animatingToOpen, 0.0, SwipeDirection.left);
-      }, returnsNormally);
+      a.controller.reportState(SwipeState.animatingToOpen, 0.0, SwipeDirection.left);
 
-      // b should remain in its current state (open/revealed).
-      expect(b.isOpen, isTrue);
+      expect(b.handle.closeCalls, 0);
     });
 
     // (i) rapid register → unregister → register without crash
     test('rapid register → unregister → register sequence is safe', () {
-      final c = _idleController();
-      addTearDown(c.dispose);
+      final cell = _createCell();
+      addTearDown(cell.controller.dispose);
 
       for (int i = 0; i < 10; i++) {
-        group.register(c);
-        group.unregister(c);
+        group.register(cell.controller);
+        group.unregister(cell.controller);
       }
-      group.register(c);
+      group.register(cell.controller);
       expect(() => group.closeAll(), returnsNormally);
     });
 
@@ -192,14 +181,62 @@ void main() {
         () {
       // Use a local group so tearDown does not double-dispose.
       final localGroup = SwipeGroupController();
-      final a = _idleController();
-      addTearDown(a.dispose);
-      localGroup.register(a);
+      final a = _createCell();
+      addTearDown(a.controller.dispose);
+      localGroup.register(a.controller);
 
       expect(() => localGroup.dispose(), returnsNormally);
 
       // a should still work after its group was disposed.
-      expect(() => a.openLeft(), returnsNormally);
+      expect(() => a.controller.openLeft(), returnsNormally);
+    });
+
+    // (k) accordion: when A is animatingToOpen and B starts animatingToOpen, A is closed
+    test('accordion: when A is animatingToOpen and B starts animatingToOpen, A is closed', () {
+      final a = _createCell();
+      final b = _createCell();
+      addTearDown(a.controller.dispose);
+      addTearDown(b.controller.dispose);
+
+      group.register(a.controller);
+      group.register(b.controller);
+
+      // A starts animating to open
+      a.controller.reportState(SwipeState.animatingToOpen, 0.5, SwipeDirection.left);
+      
+      // B starts animating to open
+      b.controller.reportState(SwipeState.animatingToOpen, 0.5, SwipeDirection.left);
+
+      // A should have received a close call because it was animating to open
+      expect(a.handle.closeCalls, 1);
+    });
+
+    // (l) accordion: when A is revealed and B starts dragging, A is closed
+    test('accordion: when A is revealed and B starts dragging, A is closed', () {
+      final a = _openCell();
+      final b = _createCell();
+      addTearDown(a.controller.dispose);
+      addTearDown(b.controller.dispose);
+
+      group.register(a.controller);
+      group.register(b.controller);
+
+      // B starts dragging
+      b.controller.reportState(SwipeState.dragging, 0.1, SwipeDirection.left);
+
+      // A should have received a close call
+      expect(a.handle.closeCalls, 1);
+    });
+
+    // (m) closeAll() also closes cells in animatingToOpen state
+    test('closeAll() also closes cells in animatingToOpen state', () {
+      final a = _createCell();
+      addTearDown(a.controller.dispose);
+      group.register(a.controller);
+      a.controller.reportState(SwipeState.animatingToOpen, 0.5, SwipeDirection.left);
+
+      group.closeAll();
+      expect(a.handle.closeCalls, 1);
     });
   });
 }
