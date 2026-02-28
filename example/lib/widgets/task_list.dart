@@ -29,33 +29,41 @@ class TaskList extends StatelessWidget {
         }
 
         if (tasks.isEmpty) {
-          return EmptyState(
-            title: showCompleted ? 'No completed tasks' : 'All caught up!',
-            message: showCompleted
-                ? 'Complete some tasks to see them here.'
-                : 'Swipe right on a task to change priority, or left for actions.',
-            icon: showCompleted ? Icons.check_circle_outline : Icons.task_alt,
-          );
+          return _buildEmptyState(context);
         }
 
-        // Using SwipeControllerProvider to group all cells in this list.
-        // This enables the "Accordion" behavior where opening one cell
-        // automatically closes any other open cell in the same group.
-        return SwipeControllerProvider(
-          groupController: SwipeGroupController(),
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            itemCount: tasks.length,
-            itemBuilder: (context, index) {
-              final task = tasks[index];
-              if (showCompleted) {
-                return CompletedTaskItem(key: ValueKey(task.id), task: task);
-              }
-              return TaskItem(key: ValueKey(task.id), task: task);
-            },
-          ),
-        );
+        return _buildTaskList(context, tasks);
       },
+    );
+  }
+
+  Widget _buildTaskList(BuildContext context, List<Task> tasks) {
+    // Using SwipeControllerProvider to group all cells in this list.
+    // This enables the "Accordion" behavior where opening one cell
+    // automatically closes any other open cell in the same group.
+    return SwipeControllerProvider(
+      groupController: SwipeGroupController(),
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        itemCount: tasks.length,
+        itemBuilder: (context, index) {
+          final task = tasks[index];
+          if (showCompleted) {
+            return CompletedTaskItem(key: ValueKey(task.id), task: task);
+          }
+          return TaskItem(key: ValueKey(task.id), task: task);
+        },
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context) {
+    return EmptyState(
+      title: showCompleted ? 'No completed tasks' : 'All caught up!',
+      message: showCompleted
+          ? 'Complete some tasks to see them here.'
+          : 'Swipe right on a task to change priority, or left for actions.',
+      icon: showCompleted ? Icons.check_circle_outline : Icons.task_alt,
     );
   }
 }
