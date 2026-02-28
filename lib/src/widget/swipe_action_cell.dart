@@ -24,6 +24,8 @@ import '../core/swipe_direction_resolver.dart';
 import '../core/swipe_progress.dart';
 import '../core/swipe_state.dart';
 import '../core/swipe_zone.dart';
+import '../feedback/feedback_dispatcher.dart';
+import '../feedback/swipe_feedback_config.dart';
 import '../gesture/swipe_gesture_config.dart';
 import '../scroll/swipe_gesture_recognizer.dart';
 import '../zones/zone_background.dart';
@@ -57,6 +59,7 @@ class SwipeActionCell extends StatefulWidget {
     this.enabled = true,
     this.onStateChanged,
     this.onProgressChanged,
+    this.feedbackConfig,
   });
 
   /// The widget displayed inside the swipe cell.
@@ -141,6 +144,9 @@ class SwipeActionCell extends StatefulWidget {
   /// Called on every frame during a drag with the current swipe progress.
   final ValueChanged<SwipeProgress>? onProgressChanged;
 
+  /// Per-cell feedback configuration.
+  final SwipeFeedbackConfig? feedbackConfig;
+
   @override
   State<SwipeActionCell> createState() => SwipeActionCellState();
 }
@@ -186,6 +192,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
   bool _awaitingConfirmation = false;
 
   // F007: scroll-position listener for close-on-scroll.
+  FeedbackDispatcher? _feedbackDispatcher;
   ScrollPosition? _scrollPosition;
 
   // F8: accessibility fields.
@@ -233,6 +240,10 @@ class SwipeActionCellState extends State<SwipeActionCell>
           ? _resolvedForwardConfig!.zones
           : null;
 
+  bool _hasActiveZones() =>
+      (_dragIsForward ? _effectiveForwardZones() : _effectiveBackwardZones()) !=
+      null;
+
   List<SwipeZone>? _effectiveBackwardZones() =>
       _resolvedBackwardConfig?.zones?.isNotEmpty == true
           ? _resolvedBackwardConfig!.zones
@@ -264,6 +275,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
   void didChangeDependencies() {
     super.didChangeDependencies();
     _resolveEffectiveConfigs();
+    _initFeedbackDispatcher();
     if (_progressValueNotifier == null && _resolvedForwardConfig != null) {
       _initProgressiveNotifier();
     }
@@ -289,6 +301,16 @@ class SwipeActionCellState extends State<SwipeActionCell>
     effectiveLeftSwipeConfig = widget.leftSwipeConfig ?? theme?.leftSwipeConfig;
     effectiveVisualConfig =
         widget.visualConfig ?? theme?.visualConfig ?? const SwipeVisualConfig();
+
+    if (kDebugMode) {
+      assert(
+        !(widget.feedbackConfig != null &&
+            (_resolvedForwardConfig?.enableHaptic == true ||
+                _resolvedBackwardConfig?.enableHaptic == true)),
+        'SwipeActionCell: Use SwipeFeedbackConfig instead of direction-level enableHaptic flags. '
+        'Legacy enableHaptic must be false when feedbackConfig is provided.',
+      );
+    }
 
     if (kDebugMode) {
       if (effectiveLeftSwipeConfig?.zones?.isNotEmpty == true) {
@@ -364,6 +386,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
     _registeredGroup?.unregister(_effectiveController);
     _effectiveController.detach(this);
     _internalController?.dispose();
+    _feedbackDispatcher?.cancelPendingTimers();
     _controller.removeStatusListener(_handleAnimationStatusChange);
     _controller.dispose();
     _progressValueNotifier?.dispose();
@@ -423,6 +446,16 @@ class SwipeActionCellState extends State<SwipeActionCell>
   /// Syncs this cell's registration with the nearest [SwipeControllerProvider].
   ///
   /// Has an empty body in US1 — filled in by T013 (US4).
+
+  void _initFeedbackDispatcher() {
+    _feedbackDispatcher = FeedbackDispatcher.resolve(
+      cellConfig: widget.feedbackConfig,
+      themeConfig: SwipeActionCellTheme.maybeOf(context)?.feedbackConfig,
+      legacyForwardHaptic: _resolvedForwardConfig?.enableHaptic ?? false,
+      legacyBackwardHaptic: _resolvedBackwardConfig?.enableHaptic ?? false,
+    );
+  }
+
   void _syncGroupRegistration() {
     // T013 will fill this in.
     final newGroup = SwipeControllerProvider.maybeGroupOf(context);
@@ -454,6 +487,8 @@ class SwipeActionCellState extends State<SwipeActionCell>
         }
         if (wasPanelClose) {
           _resolvedBackwardConfig!.onPanelClosed?.call();
+          _feedbackDispatcher?.fire(SwipeFeedbackEvent.panelClosed,
+              isForward: false);
         }
         _isPostIncrementSnapBack = false;
         _isPostActionSnapBack = false;
@@ -477,6 +512,8 @@ class SwipeActionCellState extends State<SwipeActionCell>
     if (config.mode == LeftSwipeMode.reveal) {
       _updateState(SwipeState.revealed);
       config.onPanelOpened?.call();
+      _feedbackDispatcher?.fire(SwipeFeedbackEvent.panelOpened,
+          isForward: false);
       _announcePanelOpen();
     } else {
       if (config.requireConfirmation && !_awaitingConfirmation) {
@@ -498,6 +535,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
           (config.enableHaptic ? SwipeZoneHaptic.medium : null));
       _activeZoneAtRelease!.onActivated?.call();
       _activeZoneAtRelease = null;
+      _feedbackDispatcher?.cancelPendingTimers();
     } else {
       if (config.enableHaptic) HapticFeedback.mediumImpact();
       config.onActionTriggered?.call();
@@ -571,6 +609,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
       _fireZoneHaptic(_activeZoneAtRelease!.hapticPattern ??
           (config.enableHaptic ? SwipeZoneHaptic.medium : null));
       _activeZoneAtRelease = null;
+      _feedbackDispatcher?.cancelPendingTimers();
     } else {
       if (config.enableHaptic) HapticFeedback.mediumImpact();
     }
@@ -625,6 +664,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
     _lastHapticZoneIndex = -1;
     _currentZoneIndex = -1;
     _activeZoneAtRelease = null;
+    _feedbackDispatcher?.cancelPendingTimers();
   }
 
   void _handleDragUpdate(DragUpdateDetails details, double widgetWidth) {
@@ -727,6 +767,8 @@ class SwipeActionCellState extends State<SwipeActionCell>
     } else {
       _updateState(SwipeState.animatingToClose);
       _snapBack(_controller.value, velocity);
+      _feedbackDispatcher?.fire(SwipeFeedbackEvent.swipeCancelled,
+          isForward: _dragIsForward);
     }
   }
 
@@ -901,6 +943,10 @@ class SwipeActionCellState extends State<SwipeActionCell>
         actions: actions,
         panelWidth: panelWidth,
         enableHaptic: config.enableHaptic,
+        onFeedbackRequest: _feedbackDispatcher != null
+            ? () => _feedbackDispatcher!
+                .fire(SwipeFeedbackEvent.actionTriggered, isForward: false)
+            : null,
         onClose: () {
           _updateState(SwipeState.animatingToClose);
           _snapBack(_controller.value, 0.0);
@@ -1094,7 +1140,13 @@ class SwipeActionCellState extends State<SwipeActionCell>
                         // Haptic: Forward-only crossing
                         if (newZoneIndex > _lastHapticZoneIndex &&
                             newZoneIndex >= 0) {
-                          _fireZoneHaptic(zones[newZoneIndex].hapticPattern);
+                          _feedbackDispatcher?.fire(
+                            SwipeFeedbackEvent.zoneBoundaryCrossed,
+                            isForward: _dragIsForward,
+                            pattern: HapticPattern.fromZoneHaptic(
+                              zones[newZoneIndex].hapticPattern,
+                            ),
+                          );
                         }
                         _lastHapticZoneIndex = newZoneIndex;
 
@@ -1112,20 +1164,13 @@ class SwipeActionCellState extends State<SwipeActionCell>
                       }
                     }
 
-                    if (_dragIsForward &&
-                        _resolvedForwardConfig?.enableHaptic == true &&
-                        progress.isActivated &&
+                    if (progress.isActivated &&
                         !_hapticThresholdFired &&
-                        _effectiveForwardZones() == null) {
-                      HapticFeedback.lightImpact();
-                      _hapticThresholdFired = true;
-                    }
-                    if (_dragIsBackward &&
-                        _resolvedBackwardConfig?.enableHaptic == true &&
-                        progress.isActivated &&
-                        !_hapticThresholdFired &&
-                        _effectiveBackwardZones() == null) {
-                      HapticFeedback.lightImpact();
+                        !_hasActiveZones()) {
+                      _feedbackDispatcher?.fire(
+                        SwipeFeedbackEvent.thresholdCrossed,
+                        isForward: _dragIsForward,
+                      );
                       _hapticThresholdFired = true;
                     }
                     widget.onProgressChanged?.call(progress);

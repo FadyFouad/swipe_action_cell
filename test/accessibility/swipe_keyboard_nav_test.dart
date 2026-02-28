@@ -50,8 +50,7 @@ void main() {
   });
 
   group('US2 — Keyboard Navigation: Arrow keys', () {
-    testWidgets('right arrow in LTR triggers forward action',
-        (tester) async {
+    testWidgets('right arrow in LTR triggers forward action', (tester) async {
       double progressValue = 0;
       await tester.pumpWidget(_buildTestApp(
         rightSwipeConfig: RightSwipeConfig(
@@ -79,8 +78,7 @@ void main() {
       expect(progressValue, greaterThan(0));
     });
 
-    testWidgets('left arrow in RTL triggers forward action',
-        (tester) async {
+    testWidgets('left arrow in RTL triggers forward action', (tester) async {
       double progressValue = 0;
       await tester.pumpWidget(_buildTestApp(
         textDirection: TextDirection.rtl,

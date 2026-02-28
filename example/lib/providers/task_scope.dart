@@ -18,5 +18,6 @@ class TaskScope extends InheritedWidget {
   }
 
   @override
-  bool updateShouldNotify(TaskScope oldWidget) => repository != oldWidget.repository;
+  bool updateShouldNotify(TaskScope oldWidget) =>
+      repository != oldWidget.repository;
 }

@@ -11,7 +11,8 @@ void main() {
 
   void setupHaptics() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(SystemChannels.platform, (MethodCall methodCall) async {
+        .setMockMethodCallHandler(SystemChannels.platform,
+            (MethodCall methodCall) async {
       if (methodCall.method == 'HapticFeedback.vibrate') {
         hapticCalls.add(methodCall);
       }
@@ -20,16 +21,21 @@ void main() {
   }
 
   group('SwipeActionCell Zones (US1 & US2)', () {
-    SwipeZone z(double t, {String? label, double? step, VoidCallback? onActivated, SwipeZoneHaptic? haptic}) => 
-      SwipeZone(
-        threshold: t, 
-        semanticLabel: label ?? 'Zone', 
-        stepValue: step, 
-        onActivated: onActivated,
-        hapticPattern: haptic,
-      );
+    SwipeZone z(double t,
+            {String? label,
+            double? step,
+            VoidCallback? onActivated,
+            SwipeZoneHaptic? haptic}) =>
+        SwipeZone(
+          threshold: t,
+          semanticLabel: label ?? 'Zone',
+          stepValue: step,
+          onActivated: onActivated,
+          hapticPattern: haptic,
+        );
 
-    testWidgets('intentional left swipe: fires only the highest crossed zone', (tester) async {
+    testWidgets('intentional left swipe: fires only the highest crossed zone',
+        (tester) async {
       int zone1Fired = 0;
       int zone2Fired = 0;
 
@@ -86,7 +92,8 @@ void main() {
       expect(zone2Fired, 1);
     });
 
-    testWidgets('progressive right swipe: uses correct stepValue per zone', (tester) async {
+    testWidgets('progressive right swipe: uses correct stepValue per zone',
+        (tester) async {
       double currentValue = 0.0;
       await tester.pumpWidget(MaterialApp(
         home: Scaffold(
@@ -140,7 +147,8 @@ void main() {
       expect(currentValue, 5.0);
     });
 
-    testWidgets('haptic fires on forward crossing exactly once per zone', (tester) async {
+    testWidgets('haptic fires on forward crossing exactly once per zone',
+        (tester) async {
       setupHaptics();
       hapticCalls.clear();
 
@@ -164,8 +172,9 @@ void main() {
         ),
       ));
 
-      final gesture = await tester.startGesture(tester.getCenter(find.byKey(const Key('cell5'))));
-      
+      final gesture = await tester
+          .startGesture(tester.getCenter(find.byKey(const Key('cell5'))));
+
       // Cross zone 1
       await gesture.moveBy(const Offset(80, 0)); // 35%
       await tester.pump();
@@ -187,7 +196,7 @@ void main() {
       await gesture.moveBy(const Offset(100, 0)); // 60%
       await tester.pump();
       expect(hapticCalls.length, 3);
-      
+
       await gesture.up();
       await tester.pumpAndSettle();
     });
@@ -214,12 +223,14 @@ void main() {
         ),
       ));
 
-      await tester.drag(find.byKey(const Key('reg1')), const Offset(-100, 0), warnIfMissed: false);
+      await tester.drag(find.byKey(const Key('reg1')), const Offset(-100, 0),
+          warnIfMissed: false);
       await tester.pumpAndSettle();
       expect(fired, isTrue);
     });
 
-    testWidgets('plain RightSwipeConfig (no zones) still works', (tester) async {
+    testWidgets('plain RightSwipeConfig (no zones) still works',
+        (tester) async {
       double value = 0.0;
       await tester.pumpWidget(MaterialApp(
         home: Scaffold(
@@ -239,7 +250,8 @@ void main() {
         ),
       ));
 
-      await tester.drag(find.byKey(const Key('reg2')), const Offset(200, 0), warnIfMissed: false);
+      await tester.drag(find.byKey(const Key('reg2')), const Offset(200, 0),
+          warnIfMissed: false);
       await tester.pumpAndSettle();
       expect(value, 10.0);
     });

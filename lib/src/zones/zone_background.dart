@@ -55,13 +55,15 @@ class _ZoneAwareBackgroundState extends State<ZoneAwareBackground>
       ),
     ]).animate(_clickController);
 
-    _previousZoneIndex = resolveActiveZoneIndex(widget.zones, widget.progress.ratio);
+    _previousZoneIndex =
+        resolveActiveZoneIndex(widget.zones, widget.progress.ratio);
   }
 
   @override
   void didUpdateWidget(ZoneAwareBackground oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final newZoneIndex = resolveActiveZoneIndex(widget.zones, widget.progress.ratio);
+    final newZoneIndex =
+        resolveActiveZoneIndex(widget.zones, widget.progress.ratio);
     if (newZoneIndex != _previousZoneIndex) {
       if ((MediaQuery.maybeDisableAnimationsOf(context) ?? false) == false) {
         _clickController.forward(from: 0.0);
@@ -78,12 +80,15 @@ class _ZoneAwareBackgroundState extends State<ZoneAwareBackground>
 
   @override
   Widget build(BuildContext context) {
-    final activeZoneIndex = resolveActiveZoneIndex(widget.zones, widget.progress.ratio);
+    final activeZoneIndex =
+        resolveActiveZoneIndex(widget.zones, widget.progress.ratio);
     if (activeZoneIndex == -1) return const SizedBox.shrink();
 
     final zone = widget.zones[activeZoneIndex];
     final disableAnimations = MediaQuery.maybeDisableAnimationsOf(context);
-    final effectiveStyle = (disableAnimations ?? false) ? ZoneTransitionStyle.instant : widget.transitionStyle;
+    final effectiveStyle = (disableAnimations ?? false)
+        ? ZoneTransitionStyle.instant
+        : widget.transitionStyle;
 
     Widget background;
     if (zone.background != null) {

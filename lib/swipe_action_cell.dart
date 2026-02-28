@@ -29,6 +29,7 @@ export 'src/core/swipe_progress.dart';
 export 'src/core/swipe_state.dart';
 export 'src/core/swipe_zone.dart';
 export 'src/core/typedefs.dart';
+export 'src/feedback/swipe_feedback_config.dart';
 export 'src/gesture/swipe_gesture_config.dart';
 export 'src/visual/swipe_action_background.dart';
 export 'src/widget/swipe_action_cell.dart';

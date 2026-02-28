@@ -67,7 +67,8 @@ class SwipeZone {
     this.icon,
     this.label,
     this.hapticPattern,
-  })  : assert(threshold > 0.0 && threshold < 1.0, 'Threshold must be between 0.0 and 1.0 exclusive'),
+  })  : assert(threshold > 0.0 && threshold < 1.0,
+            'Threshold must be between 0.0 and 1.0 exclusive'),
         assert(semanticLabel.length > 0, 'semanticLabel must not be empty');
 
   /// Creates a copy of this [SwipeZone] with the given fields replaced.
@@ -124,5 +125,6 @@ class SwipeZone {
       );
 
   @override
-  String toString() => 'SwipeZone(threshold: $threshold, semanticLabel: $semanticLabel)';
+  String toString() =>
+      'SwipeZone(threshold: $threshold, semanticLabel: $semanticLabel)';
 }

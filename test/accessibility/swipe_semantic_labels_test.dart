@@ -25,8 +25,7 @@ void main() {
                 child: SwipeActionCell(
                   rightSwipeConfig: const RightSwipeConfig(),
                   semanticConfig: SwipeSemanticConfig(
-                    rightSwipeLabel:
-                        SemanticLabel.builder((ctx) => 'Complete'),
+                    rightSwipeLabel: SemanticLabel.builder((ctx) => 'Complete'),
                   ),
                   child: const Text('Cell'),
                 ),
@@ -41,8 +40,7 @@ void main() {
       expect(actionIds, isNotEmpty);
     });
 
-    testWidgets('empty builder result falls back to default',
-        (tester) async {
+    testWidgets('empty builder result falls back to default', (tester) async {
       await tester.pumpWidget(
         Directionality(
           textDirection: TextDirection.ltr,
@@ -93,8 +91,7 @@ void main() {
         ),
       );
 
-      final ltrIds =
-          _getCustomActionIds(tester, find.byType(SwipeActionCell));
+      final ltrIds = _getCustomActionIds(tester, find.byType(SwipeActionCell));
 
       // RTL.
       await tester.pumpWidget(
@@ -116,8 +113,7 @@ void main() {
         ),
       );
 
-      final rtlIds =
-          _getCustomActionIds(tester, find.byType(SwipeActionCell));
+      final rtlIds = _getCustomActionIds(tester, find.byType(SwipeActionCell));
 
       expect(ltrIds, isNotEmpty);
       expect(rtlIds, isNotEmpty);

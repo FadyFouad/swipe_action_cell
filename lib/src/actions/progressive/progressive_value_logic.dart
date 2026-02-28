@@ -10,9 +10,10 @@ import 'overflow_behavior.dart';
   required RightSwipeConfig config,
   double? stepOverride,
 }) {
-  final step = stepOverride ?? (config.dynamicStep != null
-      ? config.dynamicStep!(current)
-      : config.stepValue);
+  final step = stepOverride ??
+      (config.dynamicStep != null
+          ? config.dynamicStep!(current)
+          : config.stepValue);
 
   if (step <= 0) return (nextValue: current, hitMax: false);
 

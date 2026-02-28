@@ -73,8 +73,7 @@ void main() {
           SwipeDirectionResolver.forwardPhysical(false), SwipeDirection.right);
     });
     test('RTL → left', () {
-      expect(
-          SwipeDirectionResolver.forwardPhysical(true), SwipeDirection.left);
+      expect(SwipeDirectionResolver.forwardPhysical(true), SwipeDirection.left);
     });
   });
 

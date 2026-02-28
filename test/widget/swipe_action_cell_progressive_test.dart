@@ -5,7 +5,8 @@ import 'package:swipe_action_cell/src/actions/intentional/swipe_action_panel.dar
 
 void main() {
   group('SwipeActionCell Progressive Reveal (F003)', () {
-    testWidgets('action panel expands smoothly during left swipe', (tester) async {
+    testWidgets('action panel expands smoothly during left swipe',
+        (tester) async {
       const panelWidth = 160.0;
       await tester.pumpWidget(
         MaterialApp(
@@ -35,8 +36,9 @@ void main() {
         ),
       );
 
-      final gesture = await tester.startGesture(tester.getCenter(find.byType(SwipeActionCell)));
-      
+      final gesture = await tester
+          .startGesture(tester.getCenter(find.byType(SwipeActionCell)));
+
       // Swipe 50px left
       await gesture.moveBy(const Offset(-50, 0));
       await tester.pump();
@@ -44,28 +46,30 @@ void main() {
       // Find the SwipeActionPanel and check its width in the RenderBox
       final panelFinder = find.byType(SwipeActionPanel);
       expect(panelFinder, findsOneWidget);
-      
+
       var size = tester.getSize(panelFinder);
       expect(size.width, closeTo(50.0, 1.0));
 
       // Swipe 100px left total
       await gesture.moveBy(const Offset(-50, 0));
       await tester.pump();
-      
+
       size = tester.getSize(panelFinder);
       expect(size.width, closeTo(100.0, 1.0));
 
       // Swipe past panelWidth (160px)
       await gesture.moveBy(const Offset(-100, 0)); // Total 200px
       await tester.pump();
-      
+
       size = tester.getSize(panelFinder);
       expect(size.width, closeTo(panelWidth, 1.0));
-      
+
       // Verify clamping: controller value should be clamped to panelWidth (160)
       // because we set resistance to 0 for this mode.
-      final cellState = tester.state<SwipeActionCellState>(find.byType(SwipeActionCell));
-      expect(cellState.swipeOffsetListenable.value.abs(), closeTo(panelWidth, 1.0));
+      final cellState =
+          tester.state<SwipeActionCellState>(find.byType(SwipeActionCell));
+      expect(cellState.swipeOffsetListenable.value.abs(),
+          closeTo(panelWidth, 1.0));
 
       await gesture.up();
       await tester.pumpAndSettle();
@@ -98,10 +102,12 @@ void main() {
       );
 
       // Drag 40px (below 50% of 100px threshold)
-      await tester.drag(find.byType(SwipeActionCell), const Offset(-40, 0), warnIfMissed: false);
+      await tester.drag(find.byType(SwipeActionCell), const Offset(-40, 0),
+          warnIfMissed: false);
       await tester.pumpAndSettle();
 
-      final cellState = tester.state<SwipeActionCellState>(find.byType(SwipeActionCell));
+      final cellState =
+          tester.state<SwipeActionCellState>(find.byType(SwipeActionCell));
       expect(cellState.swipeOffsetListenable.value, closeTo(0.0, 0.01));
     });
 
@@ -132,10 +138,12 @@ void main() {
       );
 
       // Drag 60px (above 50% of 100px threshold)
-      await tester.drag(find.byType(SwipeActionCell), const Offset(-60, 0), warnIfMissed: false);
+      await tester.drag(find.byType(SwipeActionCell), const Offset(-60, 0),
+          warnIfMissed: false);
       await tester.pumpAndSettle();
 
-      final cellState = tester.state<SwipeActionCellState>(find.byType(SwipeActionCell));
+      final cellState =
+          tester.state<SwipeActionCellState>(find.byType(SwipeActionCell));
       expect(cellState.swipeOffsetListenable.value, closeTo(-100.0, 0.01));
     });
 
@@ -165,7 +173,8 @@ void main() {
           ),
         );
 
-        await tester.drag(find.byType(SwipeActionCell), const Offset(50, 0), warnIfMissed: false);
+        await tester.drag(find.byType(SwipeActionCell), const Offset(50, 0),
+            warnIfMissed: false);
         await tester.pump();
 
         expect(find.byType(SwipeActionPanel), findsNothing);

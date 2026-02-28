@@ -20,7 +20,8 @@ class CompletedTaskItem extends StatelessWidget {
         leftSwipeConfig: LeftSwipeConfig(
           mode: LeftSwipeMode.autoTrigger,
           postActionBehavior: PostActionBehavior.animateOut,
-          requireConfirmation: true, // Requires a second swipe or a tap to confirm
+          requireConfirmation:
+              true, // Requires a second swipe or a tap to confirm
           enableHaptic: true,
           onActionTriggered: () {
             taskRepository.deleteTask(task.id);
@@ -29,7 +30,7 @@ class CompletedTaskItem extends StatelessWidget {
             );
           },
         ),
-        
+
         // Demonstrating right-to-left recovery (restore to active)
         rightSwipeConfig: RightSwipeConfig(
           maxValue: 1,
@@ -66,7 +67,8 @@ class CompletedTaskItem extends StatelessWidget {
             side: BorderSide(color: Colors.grey.shade200),
           ),
           child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             leading: const Icon(Icons.check_circle, color: Colors.green),
             title: Text(
               task.title,

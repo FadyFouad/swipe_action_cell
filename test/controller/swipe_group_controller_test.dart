@@ -17,6 +17,7 @@ class _FakeHandle implements SwipeCellHandle {
   void executeClose() {
     closeCalls++;
   }
+
   @override
   void executeResetProgress() {}
   @override
@@ -67,11 +68,12 @@ void main() {
       final cell = _createCell();
       addTearDown(cell.controller.dispose);
 
-      expect(() => group.unregister(cell.controller), returnsNormally); // not registered
+      expect(() => group.unregister(cell.controller),
+          returnsNormally); // not registered
       group.register(cell.controller);
       group.unregister(cell.controller);
-      expect(
-          () => group.unregister(cell.controller), returnsNormally); // already unregistered
+      expect(() => group.unregister(cell.controller),
+          returnsNormally); // already unregistered
     });
 
     // (c) accordion: when A opens, B's close() is called
@@ -85,7 +87,8 @@ void main() {
       group.register(b.controller);
 
       // Simulate A opening — B should get closed.
-      a.controller.reportState(SwipeState.animatingToOpen, 0.0, SwipeDirection.left);
+      a.controller
+          .reportState(SwipeState.animatingToOpen, 0.0, SwipeDirection.left);
 
       expect(b.handle.closeCalls, 1);
     });
@@ -100,7 +103,8 @@ void main() {
       group.register(a.controller);
       group.register(b.controller);
 
-      b.controller.reportState(SwipeState.animatingToOpen, 0.0, SwipeDirection.left);
+      b.controller
+          .reportState(SwipeState.animatingToOpen, 0.0, SwipeDirection.left);
       expect(a.handle.closeCalls, 1);
     });
 
@@ -157,7 +161,8 @@ void main() {
       group.unregister(b.controller); // unregister b before A opens
 
       // When A opens, the group should not attempt to close B.
-      a.controller.reportState(SwipeState.animatingToOpen, 0.0, SwipeDirection.left);
+      a.controller
+          .reportState(SwipeState.animatingToOpen, 0.0, SwipeDirection.left);
 
       expect(b.handle.closeCalls, 0);
     });
@@ -192,7 +197,9 @@ void main() {
     });
 
     // (k) accordion: when A is animatingToOpen and B starts animatingToOpen, A is closed
-    test('accordion: when A is animatingToOpen and B starts animatingToOpen, A is closed', () {
+    test(
+        'accordion: when A is animatingToOpen and B starts animatingToOpen, A is closed',
+        () {
       final a = _createCell();
       final b = _createCell();
       addTearDown(a.controller.dispose);
@@ -202,17 +209,20 @@ void main() {
       group.register(b.controller);
 
       // A starts animating to open
-      a.controller.reportState(SwipeState.animatingToOpen, 0.5, SwipeDirection.left);
-      
+      a.controller
+          .reportState(SwipeState.animatingToOpen, 0.5, SwipeDirection.left);
+
       // B starts animating to open
-      b.controller.reportState(SwipeState.animatingToOpen, 0.5, SwipeDirection.left);
+      b.controller
+          .reportState(SwipeState.animatingToOpen, 0.5, SwipeDirection.left);
 
       // A should have received a close call because it was animating to open
       expect(a.handle.closeCalls, 1);
     });
 
     // (l) accordion: when A is revealed and B starts dragging, A is closed
-    test('accordion: when A is revealed and B starts dragging, A is closed', () {
+    test('accordion: when A is revealed and B starts dragging, A is closed',
+        () {
       final a = _openCell();
       final b = _createCell();
       addTearDown(a.controller.dispose);
@@ -233,7 +243,8 @@ void main() {
       final a = _createCell();
       addTearDown(a.controller.dispose);
       group.register(a.controller);
-      a.controller.reportState(SwipeState.animatingToOpen, 0.5, SwipeDirection.left);
+      a.controller
+          .reportState(SwipeState.animatingToOpen, 0.5, SwipeDirection.left);
 
       group.closeAll();
       expect(a.handle.closeCalls, 1);

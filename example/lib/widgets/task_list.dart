@@ -20,8 +20,8 @@ class TaskList extends StatelessWidget {
     return ValueListenableBuilder<List<Task>>(
       valueListenable: taskRepository,
       builder: (context, allTasks, _) {
-        final tasks = showCompleted 
-            ? taskRepository.completedTasks 
+        final tasks = showCompleted
+            ? taskRepository.completedTasks
             : taskRepository.activeTasks;
 
         if (taskRepository.isLoading) {

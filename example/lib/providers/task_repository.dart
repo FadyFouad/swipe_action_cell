@@ -46,7 +46,7 @@ class TaskRepository extends ValueNotifier<List<Task>> {
 
   List<Task> get activeTasks =>
       value.where((t) => t.status == TaskStatus.active).toList();
-  
+
   List<Task> get completedTasks =>
       value.where((t) => t.status == TaskStatus.completed).toList();
 
@@ -71,7 +71,8 @@ class TaskRepository extends ValueNotifier<List<Task>> {
     final updatedList = List<Task>.from(value);
     final index = updatedList.indexWhere((t) => t.id == id);
     if (index != -1) {
-      updatedList[index] = updatedList[index].copyWith(status: TaskStatus.completed);
+      updatedList[index] =
+          updatedList[index].copyWith(status: TaskStatus.completed);
       value = updatedList;
     }
   }
@@ -80,7 +81,8 @@ class TaskRepository extends ValueNotifier<List<Task>> {
     final updatedList = List<Task>.from(value);
     final index = updatedList.indexWhere((t) => t.id == id);
     if (index != -1) {
-      updatedList[index] = updatedList[index].copyWith(status: TaskStatus.archived);
+      updatedList[index] =
+          updatedList[index].copyWith(status: TaskStatus.archived);
       value = updatedList;
     }
   }
@@ -95,7 +97,8 @@ class TaskRepository extends ValueNotifier<List<Task>> {
     final updatedList = List<Task>.from(value);
     final index = updatedList.indexWhere((t) => t.id == id);
     if (index != -1) {
-      updatedList[index] = updatedList[index].copyWith(status: TaskStatus.active);
+      updatedList[index] =
+          updatedList[index].copyWith(status: TaskStatus.active);
       value = updatedList;
     }
   }

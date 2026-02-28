@@ -4,7 +4,7 @@ import 'package:swipe_action_cell/src/core/swipe_zone.dart';
 /// Assumes zones are already sorted ascending.
 int resolveActiveZoneIndex(List<SwipeZone> zones, double ratio) {
   if (zones.isEmpty) return -1;
-  
+
   int activeIndex = -1;
   for (int i = 0; i < zones.length; i++) {
     if (ratio >= zones[i].threshold) {
@@ -26,16 +26,18 @@ SwipeZone? resolveActiveZone(List<SwipeZone> zones, double ratio) {
 
 /// Asserts that the provided list of [SwipeZone]s is valid.
 void assertZonesValid(List<SwipeZone> zones, {bool progressive = false}) {
-  assert(zones.length <= 4, 'zones must have at most 4 entries for the swipe direction.');
-  
+  assert(zones.length <= 4,
+      'zones must have at most 4 entries for the swipe direction.');
+
   double lastThreshold = -1.0;
   for (final zone in zones) {
-    assert(zone.threshold > lastThreshold, 'Zone thresholds must be strictly ascending.');
+    assert(zone.threshold > lastThreshold,
+        'Zone thresholds must be strictly ascending.');
     lastThreshold = zone.threshold;
-    
+
     if (progressive) {
-      assert(zone.stepValue != null && zone.stepValue! > 0, 
-        'Progressive zones must each have a stepValue > 0.');
+      assert(zone.stepValue != null && zone.stepValue! > 0,
+          'Progressive zones must each have a stepValue > 0.');
     }
   }
 }

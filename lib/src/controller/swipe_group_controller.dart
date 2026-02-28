@@ -68,13 +68,14 @@ class SwipeGroupController extends ChangeNotifier {
   /// Closes every currently open registered cell.
   ///
   /// Calls [SwipeController.close] on each registered controller whose
-  /// [SwipeController.isOpen] is `true` or which is currently in the 
+  /// [SwipeController.isOpen] is `true` or which is currently in the
   /// [SwipeState.animatingToOpen] state.
   ///
   /// Safe to call when no cells are open.
   void closeAll() {
     for (final c in List<SwipeController>.from(_controllers)) {
-      final shouldClose = c.isOpen || c.currentState == SwipeState.animatingToOpen;
+      final shouldClose =
+          c.isOpen || c.currentState == SwipeState.animatingToOpen;
       if (shouldClose) {
         c.close();
       }
@@ -91,8 +92,9 @@ class SwipeGroupController extends ChangeNotifier {
   void closeAllExcept(SwipeController controller) {
     for (final c in List<SwipeController>.from(_controllers)) {
       if (c == controller) continue;
-      
-      final shouldClose = c.isOpen || c.currentState == SwipeState.animatingToOpen;
+
+      final shouldClose =
+          c.isOpen || c.currentState == SwipeState.animatingToOpen;
       if (shouldClose) {
         c.close();
       }

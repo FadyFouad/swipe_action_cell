@@ -4,14 +4,6 @@ import 'package:flutter/widgets.dart';
 import 'swipe_action.dart';
 
 /// The reveal-mode action panel rendered behind a [SwipeActionCell] during a left swipe.
-///
-/// Intended for internal use by [SwipeActionCell] when
-/// [IntentionalSwipeConfig.mode] is [LeftSwipeMode.reveal].
-/// May also be used directly for custom layouts.
-///
-/// Renders a [Row] of action buttons, each sized proportionally to its
-/// [SwipeAction.flex] weight. A destructive button expands to [panelWidth]
-/// on the first tap and executes on the second tap.
 class SwipeActionPanel extends StatefulWidget {
   /// Creates a [SwipeActionPanel].
   const SwipeActionPanel({
@@ -20,6 +12,7 @@ class SwipeActionPanel extends StatefulWidget {
     required this.panelWidth,
     required this.onClose,
     this.enableHaptic = false,
+    this.onFeedbackRequest,
   }) : assert(
           actions.length >= 1 && actions.length <= 3,
           'actions must contain 1–3 items',
@@ -32,13 +25,13 @@ class SwipeActionPanel extends StatefulWidget {
   final double panelWidth;
 
   /// Called by the panel when any user interaction should close it.
-  ///
-  /// The panel itself does not close; it calls [onClose] and lets the parent
-  /// ([SwipeActionCell]) drive the close animation.
   final VoidCallback onClose;
 
   /// Whether haptic feedback fires when a button is tapped.
   final bool enableHaptic;
+
+  /// Called when feedback (haptic/audio) is requested by a button tap.
+  final VoidCallback? onFeedbackRequest;
 
   @override
   State<SwipeActionPanel> createState() => _SwipeActionPanelState();
@@ -54,7 +47,7 @@ class _SwipeActionPanelState extends State<SwipeActionPanel> {
     if (action.isDestructive) {
       if (_expandedIndex == index) {
         // Second tap on already-expanded destructive button — execute.
-        if (widget.enableHaptic) HapticFeedback.mediumImpact();
+        _fireFeedback();
         action.onTap();
         widget.onClose();
         setState(() => _expandedIndex = null);
@@ -68,16 +61,22 @@ class _SwipeActionPanelState extends State<SwipeActionPanel> {
         // Collapse any expanded destructive button without firing it.
         setState(() => _expandedIndex = null);
       }
-      if (widget.enableHaptic) HapticFeedback.mediumImpact();
+      _fireFeedback();
       action.onTap();
       widget.onClose();
     }
   }
 
+  void _fireFeedback() {
+    if (widget.onFeedbackRequest != null) {
+      widget.onFeedbackRequest!();
+    } else if (widget.enableHaptic) {
+      HapticFeedback.mediumImpact();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // When a destructive button is expanded, it takes the full panel width
-    // and other buttons are hidden.
     if (_expandedIndex != null) {
       final expandedAction = widget.actions[_expandedIndex!];
       return AnimatedContainer(

@@ -57,8 +57,7 @@ void main() {
       expect(state.swipeOffsetListenable.value, 0.0);
     });
 
-    testWidgets(
-        'disableAnimations: false — animation requires multiple frames',
+    testWidgets('disableAnimations: false — animation requires multiple frames',
         (tester) async {
       await tester.pumpWidget(_buildTestApp(
         disableAnimations: false,

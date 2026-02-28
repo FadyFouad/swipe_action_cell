@@ -58,20 +58,18 @@ void main() {
       expect(data.label, contains('My item'));
     });
 
-    testWidgets(
-        'custom actions registered when rightSwipeConfig non-null',
+    testWidgets('custom actions registered when rightSwipeConfig non-null',
         (tester) async {
       await tester.pumpWidget(_buildTestApp(
         rightSwipeConfig: const RightSwipeConfig(),
       ));
 
-      final actionIds = _getCustomActionIds(
-          tester, find.byType(SwipeActionCell));
+      final actionIds =
+          _getCustomActionIds(tester, find.byType(SwipeActionCell));
       expect(actionIds, isNotEmpty);
     });
 
-    testWidgets(
-        'custom actions registered when leftSwipeConfig non-null',
+    testWidgets('custom actions registered when leftSwipeConfig non-null',
         (tester) async {
       await tester.pumpWidget(_buildTestApp(
         leftSwipeConfig: LeftSwipeConfig(
@@ -80,8 +78,8 @@ void main() {
         ),
       ));
 
-      final actionIds = _getCustomActionIds(
-          tester, find.byType(SwipeActionCell));
+      final actionIds =
+          _getCustomActionIds(tester, find.byType(SwipeActionCell));
       expect(actionIds, isNotEmpty);
     });
 
@@ -89,13 +87,12 @@ void main() {
         (tester) async {
       await tester.pumpWidget(_buildTestApp());
 
-      final actionIds = _getCustomActionIds(
-          tester, find.byType(SwipeActionCell));
+      final actionIds =
+          _getCustomActionIds(tester, find.byType(SwipeActionCell));
       expect(actionIds, isEmpty);
     });
 
-    testWidgets('two custom actions when both configs present',
-        (tester) async {
+    testWidgets('two custom actions when both configs present', (tester) async {
       await tester.pumpWidget(_buildTestApp(
         rightSwipeConfig: const RightSwipeConfig(),
         leftSwipeConfig: LeftSwipeConfig(
@@ -104,8 +101,8 @@ void main() {
         ),
       ));
 
-      final actionIds = _getCustomActionIds(
-          tester, find.byType(SwipeActionCell));
+      final actionIds =
+          _getCustomActionIds(tester, find.byType(SwipeActionCell));
       expect(actionIds.length, 2);
     });
   });
@@ -118,8 +115,7 @@ void main() {
         rightSwipeConfig: const RightSwipeConfig(),
       ));
 
-      final ltrIds = _getCustomActionIds(
-          tester, find.byType(SwipeActionCell));
+      final ltrIds = _getCustomActionIds(tester, find.byType(SwipeActionCell));
       expect(ltrIds, isNotEmpty);
 
       // RTL — should have "Swipe left to progress" (different action ID).
@@ -128,8 +124,7 @@ void main() {
         rightSwipeConfig: const RightSwipeConfig(),
       ));
 
-      final rtlIds = _getCustomActionIds(
-          tester, find.byType(SwipeActionCell));
+      final rtlIds = _getCustomActionIds(tester, find.byType(SwipeActionCell));
       expect(rtlIds, isNotEmpty);
 
       // The action IDs should differ because labels differ.
@@ -142,8 +137,8 @@ void main() {
       await tester.pumpWidget(_buildTestApp(
         rightSwipeConfig: const RightSwipeConfig(),
       ));
-      final defaultIds = _getCustomActionIds(
-          tester, find.byType(SwipeActionCell));
+      final defaultIds =
+          _getCustomActionIds(tester, find.byType(SwipeActionCell));
 
       // Custom label.
       await tester.pumpWidget(_buildTestApp(
@@ -152,8 +147,8 @@ void main() {
           rightSwipeLabel: SemanticLabel.string('Complete task'),
         ),
       ));
-      final customIds = _getCustomActionIds(
-          tester, find.byType(SwipeActionCell));
+      final customIds =
+          _getCustomActionIds(tester, find.byType(SwipeActionCell));
 
       expect(defaultIds.first, isNot(equals(customIds.first)));
     });
