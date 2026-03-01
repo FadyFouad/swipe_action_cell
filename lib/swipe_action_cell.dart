@@ -34,6 +34,7 @@ export 'src/gesture/swipe_gesture_config.dart';
 export 'src/painting/particle_config.dart';
 export 'src/painting/swipe_morph_icon.dart';
 export 'src/painting/swipe_painting_config.dart';
+export 'src/templates/template_style.dart';
 export 'src/undo/swipe_undo_config.dart';
 export 'src/undo/undo_data.dart';
 export 'src/visual/swipe_action_background.dart';

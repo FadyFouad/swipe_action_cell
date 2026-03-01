@@ -1,34 +1,48 @@
 import sys
 import re
 
-# 1. Fix the barrel file
-barrel_path = "../lib/swipe_action_cell.dart"
-content = open(barrel_path).read()
-# Clean up the broken export
-content = re.sub(r"export src/painting/swipe_painting_config\.dart;", "", content)
-content = re.sub(r"export 'src/painting/swipe_painting_config\.dart';\s*", "", content)
-content = content.strip() + "
-export 'src/painting/swipe_painting_config.dart';
-"
-open(barrel_path, "w").write(content)
+def fix_quotes(file_path):
+    with open(file_path, "r") as f:
+        content = f.read()
+    content = content.replace("\"", "'")
+    with open(file_path, "w") as f:
+        f.write(content)
 
-# 2. Fix _NoOpPainter in swipe_action_cell.dart
-file_path = "../lib/src/widget/swipe_action_cell.dart"
-content = open(file_path).read()
+fix_quotes("../lib/src/testing/mock_swipe_controller.dart")
+fix_quotes("../lib/src/testing/swipe_assertions.dart")
+fix_quotes("../lib/src/testing/swipe_test_harness.dart")
+fix_quotes("../lib/testing.dart")
 
-# Remove any existing _NoOpPainter class at the end
-content = re.sub(r"class _NoOpPainter extends CustomPainter \{.*?\}
-?", "", content, flags=re.DOTALL)
+# Fix SwipeTester docs and quotes
+file_path_tester = "../lib/src/testing/swipe_tester.dart"
+with open(file_path_tester, "r") as f:
+    c = f.read()
 
-# Add it back properly at the very end of the file
-noop_class = """
-class _NoOpPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {}
-  @override
-  bool shouldRepaint(_NoOpPainter old) => false;
-}
-"""
-content = content.strip() + "
-" + noop_class
-open(file_path, "w").write(content)
+c = c.replace("\"", "'")
+c = c.replace("  static Future<void> swipeLeft", "  /// Drags the cell left by the specified [ratio] of its width.\n  static Future<void> swipeLeft")
+c = c.replace("  static Future<void> swipeRight", "  /// Drags the cell right by the specified [ratio] of its width.\n  static Future<void> swipeRight")
+c = c.replace("  static Future<void> flingLeft", "  /// Flings the cell left with the specified [velocity].\n  static Future<void> flingLeft")
+c = c.replace("  static Future<void> flingRight", "  /// Flings the cell right with the specified [velocity].\n  static Future<void> flingRight")
+c = c.replace("  static Future<void> dragTo", "  /// Drags the cell to the exact [offset] and pumps exactly one frame.\n  static Future<void> dragTo")
+c = c.replace("  static Future<void> tapAction", "  /// Taps the action button at [actionIndex] in a revealed cell.\n  static Future<void> tapAction")
+
+with open(file_path_tester, "w") as f:
+    f.write(c)
+
+# Fix testing.dart library name and sorting
+file_path_testing = "../lib/testing.dart"
+with open(file_path_testing, "r") as f:
+    c = f.read()
+
+c = c.replace("library testing;", "library;")
+lines = c.split("\n")
+exports = sorted([line for line in lines if line.startswith("export")])
+other = [line for line in lines if not line.startswith("export")]
+new_c = ""
+for line in other:
+    if line.strip() and not line.startswith("//"):
+        new_c += line + "\n"
+new_c += "\n" + "\n".join(exports)
+
+with open(file_path_testing, "w") as f:
+    f.write(new_c)

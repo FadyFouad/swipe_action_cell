@@ -129,6 +129,10 @@ Phase 4 (Polish):   F14 → F15 → F16 → F17
 - N/A (in-memory undo state only; persistence is consumer responsibility) (011-swipe-undo)
 - Dart ≥ 3.4.0 < 4.0.0 + Flutter SDK only — `dart:math` for particle angle computation (stdlib, no external package) (012-custom-painter)
 - N/A (no persistence) (012-custom-painter)
+- Dart ≥ 3.4.0 < 4.0.0 + Flutter SDK only — `material` and `cupertino` icon libraries (SDK-bundled, Constitution IV) (013-prebuilt-templates)
+- N/A (no persistence — templates are stateless config builders) (013-prebuilt-templates)
+- Dart ≥ 3.4.0 < 4.0.0 + `flutter_test` (Flutter SDK — moved from dev_dependencies to dependencies to enable `lib/` imports) (014-testing-utils)
+- N/A (stateless utility code) (014-testing-utils)
 
 ## Recent Changes
 - 001-gesture-animation: Added Dart >=3.4.0 + Flutter SDK only (zero external runtime deps — Constitution IV)
