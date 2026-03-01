@@ -3,46 +3,124 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:swipe_action_cell/swipe_action_cell.dart';
 
 void main() {
-  group('SwipeActionCell', () {
-    testWidgets('renders child widget', (WidgetTester tester) async {
+  const rightKey = Key('right_bg');
+  const leftKey = Key('left_bg');
+  const childKey = Key('child');
+
+  group('SwipeActionCell Core (F1 & F2)', () {
+    testWidgets('renders background widgets correctly during swipe',
+        (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
+        MaterialApp(
           home: Scaffold(
             body: SwipeActionCell(
-              child: Text('hello'),
+              visualConfig: SwipeVisualConfig(
+                rightBackground: (context, progress) =>
+                    const SizedBox(key: rightKey),
+                leftBackground: (context, progress) =>
+                    const SizedBox(key: leftKey),
+              ),
+              child: const SizedBox(width: 100, height: 100),
             ),
           ),
         ),
       );
-      expect(find.text('hello'), findsOneWidget);
-    });
 
-    testWidgets('renders child when enabled is true', (WidgetTester tester) async {
+      // Swipe right -> reveal rightBackground
+      await tester.drag(
+          find.byType(SwipeActionCell),
+          warnIfMissed: false,
+          const Offset(50, 0));
+      await tester.pump();
+      expect(find.byKey(rightKey), findsOneWidget);
+      expect(find.byKey(leftKey), findsNothing);
+
+      // Reset and swipe left -> reveal leftBackground
       await tester.pumpWidget(
-        const MaterialApp(
+        MaterialApp(
           home: Scaffold(
             body: SwipeActionCell(
-              enabled: true,
-              child: Text('enabled'),
+              key: const Key('cell2'),
+              visualConfig: SwipeVisualConfig(
+                rightBackground: (context, progress) =>
+                    const SizedBox(key: rightKey),
+                leftBackground: (context, progress) =>
+                    const SizedBox(key: leftKey),
+              ),
+              child: const SizedBox(width: 100, height: 100),
             ),
           ),
         ),
       );
-      expect(find.text('enabled'), findsOneWidget);
+      await tester.drag(
+          find.byType(SwipeActionCell),
+          warnIfMissed: false,
+          const Offset(-50, 0));
+      await tester.pump();
+      expect(find.byKey(leftKey), findsOneWidget);
+      expect(find.byKey(rightKey), findsNothing);
     });
 
-    testWidgets('renders child when enabled is false', (WidgetTester tester) async {
+    testWidgets('gestureConfig.enabledDirections restricts movement',
+        (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
+        MaterialApp(
+          home: Scaffold(
+            body: SwipeActionCell(
+              visualConfig: SwipeVisualConfig(
+                rightBackground: (context, progress) =>
+                    const SizedBox(key: rightKey),
+                leftBackground: (context, progress) =>
+                    const SizedBox(key: leftKey),
+              ),
+              gestureConfig: const SwipeGestureConfig(
+                enabledDirections: {SwipeDirection.right},
+              ),
+              child: const SizedBox(width: 100, height: 100),
+            ),
+          ),
+        ),
+      );
+
+      // Try swiping left
+      await tester.drag(
+          find.byType(SwipeActionCell),
+          warnIfMissed: false,
+          const Offset(-50, 0));
+      await tester.pump();
+      expect(find.byKey(leftKey), findsNothing);
+
+      // Try swiping right
+      await tester.drag(
+          find.byType(SwipeActionCell),
+          warnIfMissed: false,
+          const Offset(50, 0));
+      await tester.pump();
+      expect(find.byKey(rightKey), findsOneWidget);
+    });
+
+    testWidgets('enabled: false disables all swipe gestures', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
           home: Scaffold(
             body: SwipeActionCell(
               enabled: false,
-              child: Text('disabled'),
+              visualConfig: SwipeVisualConfig(
+                rightBackground: (context, progress) =>
+                    const SizedBox(key: rightKey),
+              ),
+              child: const SizedBox(width: 100, height: 100),
             ),
           ),
         ),
       );
-      expect(find.text('disabled'), findsOneWidget);
+
+      await tester.drag(
+          find.byType(SwipeActionCell),
+          warnIfMissed: false,
+          const Offset(50, 0));
+      await tester.pump();
+      expect(find.byKey(rightKey), findsNothing);
     });
   });
 }

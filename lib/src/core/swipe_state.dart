@@ -17,4 +17,10 @@ enum SwipeState {
 
   /// The widget is in the revealed/open position (action panel is visible).
   revealed,
+
+  /// The cell is sliding fully off-screen to the left after
+  /// [PostActionBehavior.animateOut]. This is a terminal state within the
+  /// widget; no automatic transition follows. The developer is responsible
+  /// for removing the item from the list.
+  animatingOut,
 }
