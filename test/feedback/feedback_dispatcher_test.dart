@@ -20,6 +20,11 @@ void main() {
     });
   });
 
+  tearDown(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, null);
+  });
+
   group('FeedbackDispatcher Basic Dispatch', () {
     test('fires light impact for thresholdCrossed by default', () {
       final dispatcher = FeedbackDispatcher.resolve(
