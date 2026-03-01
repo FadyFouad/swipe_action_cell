@@ -3,6 +3,9 @@ import 'package:flutter/services.dart';
 import 'swipe_feedback_config.dart';
 
 /// Manages haptic dispatch and audio callback invocation.
+///
+/// This class is not thread-safe and must only be used from the main Flutter
+/// isolate, which is the standard usage for all Flutter UI components.
 class FeedbackDispatcher {
   final SwipeFeedbackConfig? _config;
   final bool _legacyEnableHapticForward;
@@ -85,6 +88,10 @@ class FeedbackDispatcher {
   void _executePattern(HapticPattern pattern) {
     if (pattern.steps.isEmpty) return;
 
+    // Cancel any still-pending timers from a previous pattern before starting
+    // a new one to prevent unintended overlaps.
+    cancelPendingTimers();
+
     // First step synchronous
     _fireHapticType(pattern.steps.first.type);
 
@@ -92,8 +99,10 @@ class FeedbackDispatcher {
       int accumulatedDelay = pattern.steps.first.delayBeforeNextMs;
       for (int i = 1; i < pattern.steps.length; i++) {
         final step = pattern.steps[i];
-        final timer = Timer(Duration(milliseconds: accumulatedDelay), () {
+        late final Timer timer;
+        timer = Timer(Duration(milliseconds: accumulatedDelay), () {
           _fireHapticType(step.type);
+          _activeTimers.remove(timer);
         });
         _activeTimers.add(timer);
         accumulatedDelay += step.delayBeforeNextMs;
