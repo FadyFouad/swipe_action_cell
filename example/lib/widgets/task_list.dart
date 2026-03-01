@@ -42,7 +42,6 @@ class TaskList extends StatelessWidget {
     // This enables the "Accordion" behavior where opening one cell
     // automatically closes any other open cell in the same group.
     return SwipeControllerProvider(
-      groupController: SwipeGroupController(),
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(vertical: 8),
         itemCount: tasks.length,
