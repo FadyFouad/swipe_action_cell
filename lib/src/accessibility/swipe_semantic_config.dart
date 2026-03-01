@@ -22,8 +22,7 @@ class SemanticLabel {
   /// Resolves the label for the given [context].
   ///
   /// For [SemanticLabel.string], returns the static string.
-  /// For [SemanticLabel.builder], calls the builder function.
-  /// Returns an empty string if the builder returns null or empty.
+  /// For [SemanticLabel.builder], invokes the builder and returns its result.
   String resolve(BuildContext context) {
     if (_value != null) return _value;
     final result = _builder!(context);
