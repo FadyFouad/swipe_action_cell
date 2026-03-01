@@ -4,7 +4,7 @@
 - Core data models: `SwipeDirection`, `SwipeState`, `SwipeProgress`
 - Widget skeleton: `SwipeActionCell` (no swipe behavior yet)
 
-## 0.1.0
+## 0.1.0-beta.1
 
 - **Breaking Change**: Consolidated SwipeActionCell configuration into dedicated configuration objects.
 
