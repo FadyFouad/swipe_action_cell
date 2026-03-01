@@ -2,7 +2,7 @@ import 'package:flutter/widgets.dart';
 
 /// Appearance configuration for the persistent progress bar rendered on the
 /// leading edge of a [SwipeActionCell] when
-/// [ProgressiveSwipeConfig.showProgressIndicator] is `true`.
+/// [RightSwipeConfig.showProgressIndicator] is `true`.
 @immutable
 class ProgressIndicatorConfig {
   /// Creates a [ProgressIndicatorConfig].
