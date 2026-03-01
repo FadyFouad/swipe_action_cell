@@ -28,7 +28,7 @@ migrate_working_dir/
 .dart_tool/
 .flutter-plugins-dependencies
 /build/
-#specs/
+specs/
 /coverage/
 /ob-upload-keystore.jks
 /example/build/7aa1711397d30fa18ef3c6aa66b1fcb2/.filecache
