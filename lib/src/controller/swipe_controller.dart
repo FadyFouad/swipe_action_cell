@@ -167,6 +167,24 @@ class SwipeController extends ChangeNotifier {
     _handle!.executeResetProgress();
   }
 
+  /// Triggers undo on the attached cell.
+  ///
+  /// Returns `true` if undo was successfully triggered, `false` if no undo is
+  /// pending or no cell is attached.
+  bool undo() {
+    if (_disposed || !_isUndoPending || _handle == null) return false;
+    _handle!.executeUndo();
+    return true;
+  }
+
+  /// Force-commits the pending undo immediately (as if the undo window expired).
+  ///
+  /// No-op when no undo is pending or no cell is attached.
+  void commitPendingUndo() {
+    if (_disposed || !_isUndoPending || _handle == null) return;
+    _handle!.executeCommitUndo();
+  }
+
   /// Sets the progressive value of the attached cell to [value], clamped
   /// to [[RightSwipeConfig.minValue]..[RightSwipeConfig.maxValue]].
   ///
@@ -175,22 +193,6 @@ class SwipeController extends ChangeNotifier {
   /// when the clamped value differs from the current value.
   ///
   /// No-op (debug assertion in debug mode) when no cell is attached.
-
-  /// Triggers undo on the attached cell.
-  bool undo() {
-    if (_disposed || !_isUndoPending || _handle == null) return false;
-    _handle!.executeUndo();
-    return true;
-  }
-
-  /// Force-commits the pending undo immediately (as if expired).
-  void commitPendingUndo() {
-    if (_disposed || !_isUndoPending || _handle == null) return;
-    _handle!.executeCommitUndo();
-  }
-
-  /// Sets the progressive value of the attached cell to [value], clamped
-  /// to [[RightSwipeConfig.minValue]..[RightSwipeConfig.maxValue]].
   void setProgress(double value) {
     assert(
       _handle != null,
