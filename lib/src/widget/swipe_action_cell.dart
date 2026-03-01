@@ -1048,28 +1048,39 @@ class SwipeActionCellState extends State<SwipeActionCell>
         _progressValueNotifier!.value = forwardConfig.value!;
       }
     }
+    // F11: handle undoConfig change independently of controller swap.
+    if (widget.undoConfig != oldWidget.undoConfig) {
+      if (widget.undoConfig == null) {
+        _undoTimer?.cancel();
+        _undoBarController?.dispose();
+        _undoBarController = null;
+      } else if (_undoBarController == null) {
+        _undoBarController = AnimationController(
+          vsync: this,
+          value: 1.0,
+          duration: widget.undoConfig!.duration,
+        );
+      } else {
+        _undoBarController!.duration = widget.undoConfig!.duration;
+      }
+    }
+    // F13: handle paintingConfig/particleConfig change independently of controller swap.
+    final oldParticleConfig = oldWidget.paintingConfig?.particleConfig;
+    final newParticleConfig = widget.paintingConfig?.particleConfig;
+    if (newParticleConfig != oldParticleConfig) {
+      if (newParticleConfig == null) {
+        _particleController?.dispose();
+        _particleController = null;
+        _particles = null;
+      } else if (_particleController == null) {
+        _particleController = AnimationController(vsync: this);
+      }
+    }
     // F7: handle controller swap.
     if (widget.controller != oldWidget.controller) {
       final oldController = oldWidget.controller ?? _internalController!;
       _registeredGroup?.unregister(oldController);
       oldController.detach(this);
-      // F11: handle undoConfig change.
-      if (widget.undoConfig != oldWidget.undoConfig) {
-        if (widget.undoConfig == null) {
-          _particleController?.dispose();
-          _undoTimer?.cancel();
-          _undoBarController?.dispose();
-          _undoBarController = null;
-        } else if (_undoBarController == null) {
-          _undoBarController = AnimationController(
-            vsync: this,
-            value: 1.0,
-            duration: widget.undoConfig!.duration,
-          );
-        } else {
-          _undoBarController!.duration = widget.undoConfig!.duration;
-        }
-      }
       if (widget.controller == null && _internalController == null) {
         _internalController = SwipeController();
       } else if (widget.controller != null) {
