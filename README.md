@@ -1,6 +1,6 @@
 # swipe_action_cell
 
-> 🚧 **Under Development** — not yet published to pub.dev
+> 🚧 **Under Development** — Beta Version
 
 A highly configurable Flutter swipe interaction widget with asymmetric left/right semantics:
 
