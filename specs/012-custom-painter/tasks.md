@@ -19,7 +19,7 @@
 
 **Purpose**: Create the `lib/src/painting/` directory structure per plan.md
 
-- [ ] T001 Create directory `lib/src/painting/` and stub files: `swipe_painting_config.dart`, `particle_config.dart`, `swipe_particle_painter.dart`, `swipe_morph_icon.dart` (each with a single `// TODO` comment) and test directory `test/painting/`
+- [x] T001 Create directory `lib/src/painting/` and stub files: `swipe_painting_config.dart`, `particle_config.dart`, `swipe_particle_painter.dart`, `swipe_morph_icon.dart` (each with a single `// TODO` comment) and test directory `test/painting/`
 
 ---
 
@@ -29,10 +29,10 @@
 
 **⚠️ CRITICAL**: Write tests to FAIL (RED) before implementing.
 
-- [ ] T002 Write failing unit tests for `SwipePaintingConfig` + `SwipePainterCallback` typedef: const construction, all-null fields, copyWith, `==`/`hashCode`, null means zero-overhead assertion in `test/painting/swipe_painting_config_test.dart`
-- [ ] T003 [P] Write failing unit tests for `ParticleConfig`: const construction, default values (`count=12`, `duration=500ms`, `spreadAngle=360`), copyWith, empty-colors fallback to default palette, `count=0` no-op, `==`/`hashCode` in `test/painting/swipe_painting_config_test.dart`
-- [ ] T004 Implement `SwipePainterCallback` typedef and `SwipePaintingConfig` class (const constructor, all fields nullable, copyWith, `==`, `hashCode`, dartdoc on every member) in `lib/src/painting/swipe_painting_config.dart` — run T002 tests to GREEN
-- [ ] T005 [P] Implement `ParticleConfig` class (const constructor, default values, copyWith, `==`, `hashCode`, dartdoc on every member) in `lib/src/painting/particle_config.dart` — run T003 tests to GREEN
+- [x] T002 Write failing unit tests for `SwipePaintingConfig` + `SwipePainterCallback` typedef: const construction, all-null fields, copyWith, `==`/`hashCode`, null means zero-overhead assertion in `test/painting/swipe_painting_config_test.dart`
+- [x] T003 [P] Write failing unit tests for `ParticleConfig`: const construction, default values (`count=12`, `duration=500ms`, `spreadAngle=360`), copyWith, empty-colors fallback to default palette, `count=0` no-op, `==`/`hashCode` in `test/painting/swipe_painting_config_test.dart`
+- [x] T004 Implement `SwipePainterCallback` typedef and `SwipePaintingConfig` class (const constructor, all fields nullable, copyWith, `==`, `hashCode`, dartdoc on every member) in `lib/src/painting/swipe_painting_config.dart` — run T002 tests to GREEN
+- [x] T005 [P] Implement `ParticleConfig` class (const constructor, default values, copyWith, `==`, `hashCode`, dartdoc on every member) in `lib/src/painting/particle_config.dart` — run T003 tests to GREEN
 
 **Checkpoint**: `flutter test test/painting/swipe_painting_config_test.dart` passes. Foundation ready.
 
@@ -44,13 +44,13 @@
 
 **Independent Test** (from quickstart.md Scenario 1): Attach a background painter drawing a red gradient whose width scales with `progress.ratio`; verify it grows/shrinks with drag. Attach a foreground yellow-border painter; verify it renders above `ListTile` content. Remove `paintingConfig`; verify no artifacts.
 
-- [ ] T006 Write failing widget tests for painter hooks: (a) background painter renders below child content, (b) foreground painter renders above child content, (c) tap on child interactive area with foreground painter active → tap fires, (d) `paintingConfig: null` → Stack has no extra children, (e) painter callback throws in debug → error propagates, (f) painter callback throws in release → layer skipped, no crash — in `test/widget/swipe_action_cell_painting_test.dart`
-- [ ] T007 [US1] Add `final SwipePaintingConfig? paintingConfig` field to `SwipeActionCell` constructor (alongside existing `undoConfig`; dartdoc required) in `lib/src/widget/swipe_action_cell.dart`
-- [ ] T008 [US1] Capture `_widgetHeight` from `LayoutBuilder` constraints and compute `_burstOrigin = Offset(_widgetWidth / 2, _widgetHeight / 2)` in `SwipeActionCellState.build()` in `lib/src/widget/swipe_action_cell.dart`
-- [ ] T009 [US1] Implement `_safePainterCall(SwipePainterCallback, SwipeProgress, SwipeState) → CustomPainter` helper (rethrow in `kDebugMode`; catch + `FlutterError.reportError` + return `_NoOpPainter()` in release) and internal `_NoOpPainter extends CustomPainter` in `lib/src/widget/swipe_action_cell.dart`
-- [ ] T010 [US1] Wire background painter as first Stack child: `if (widget.paintingConfig?.backgroundPainter != null) Positioned.fill(child: IgnorePointer(child: RepaintBoundary(child: CustomPaint(painter: _safePainterCall(...)))))` in `SwipeActionCellState.build()` in `lib/src/widget/swipe_action_cell.dart`
-- [ ] T011 [US1] Wire foreground painter as Stack child after progress indicator: `if (widget.paintingConfig?.foregroundPainter != null) Positioned.fill(child: IgnorePointer(child: RepaintBoundary(child: CustomPaint(painter: _safePainterCall(...)))))` in `SwipeActionCellState.build()` in `lib/src/widget/swipe_action_cell.dart`
-- [ ] T012 [US1] Add barrel export `export 'src/painting/swipe_painting_config.dart';` to `lib/swipe_action_cell.dart` — run T006 tests to GREEN
+- [x] T006 Write failing widget tests for painter hooks: (a) background painter renders below child content, (b) foreground painter renders above child content, (c) tap on child interactive area with foreground painter active → tap fires, (d) `paintingConfig: null` → Stack has no extra children, (e) painter callback throws in debug → error propagates, (f) painter callback throws in release → layer skipped, no crash — in `test/widget/swipe_action_cell_painting_test.dart`
+- [x] T007 [US1] Add `final SwipePaintingConfig? paintingConfig` field to `SwipeActionCell` constructor (alongside existing `undoConfig`; dartdoc required) in `lib/src/widget/swipe_action_cell.dart`
+- [x] T008 [US1] Capture `_widgetHeight` from `LayoutBuilder` constraints and compute `_burstOrigin = Offset(_widgetWidth / 2, _widgetHeight / 2)` in `SwipeActionCellState.build()` in `lib/src/widget/swipe_action_cell.dart`
+- [x] T009 [US1] Implement `_safePainterCall(SwipePainterCallback, SwipeProgress, SwipeState) → CustomPainter` helper (rethrow in `kDebugMode`; catch + `FlutterError.reportError` + return `_NoOpPainter()` in release) and internal `_NoOpPainter extends CustomPainter` in `lib/src/widget/swipe_action_cell.dart`
+- [x] T010 [US1] Wire background painter as first Stack child: `if (widget.paintingConfig?.backgroundPainter != null) Positioned.fill(child: IgnorePointer(child: RepaintBoundary(child: CustomPaint(painter: _safePainterCall(...)))))` in `SwipeActionCellState.build()` in `lib/src/widget/swipe_action_cell.dart`
+- [x] T011 [US1] Wire foreground painter as Stack child after progress indicator: `if (widget.paintingConfig?.foregroundPainter != null) Positioned.fill(child: IgnorePointer(child: RepaintBoundary(child: CustomPaint(painter: _safePainterCall(...)))))` in `SwipeActionCellState.build()` in `lib/src/widget/swipe_action_cell.dart`
+- [x] T012 [US1] Add barrel export `export 'src/painting/swipe_painting_config.dart';` to `lib/swipe_action_cell.dart` — run T006 tests to GREEN
 
 **Checkpoint**: `flutter test test/widget/swipe_action_cell_painting_test.dart` (US1 tests) passes. Painters visible in isolation.
 
@@ -62,9 +62,9 @@
 
 **Independent Test** (from quickstart.md Scenario 2): Configure grey/rounded resting + pink/sharp activated decoration. At 50% drag the appearance is visually halfway. Release without completing → returns to resting smoothly.
 
-- [ ] T013 [US2] Write failing widget tests for decoration interpolation: (a) both decorations set: `ratio=0.0` → resting applied, `ratio=0.5` → blended, `ratio=1.0` → activated, (b) only `restingDecoration` set → resting always, no crash, (c) `ratio > 1.0` → clamped to activated state, no overflow, (d) `Decoration.lerp` returns null (incompatible types) → fallback to resting, no crash — append to `test/widget/swipe_action_cell_painting_test.dart`
-- [ ] T014 [US2] Implement `_buildDecoratedChild(Widget translatedChild, SwipeProgress progress) → Widget` helper: guard on `restingDecoration != null || activatedDecoration != null`; compute `t = progress.ratio.clamp(0.0, 1.0)`; use `Decoration.lerp(resting, activated, t) ?? resting`; wrap in `DecoratedBox` in `lib/src/widget/swipe_action_cell.dart`
-- [ ] T015 [US2] Replace bare `translatedChild` reference in `Stack` children with `_buildDecoratedChild(translatedChild, progress)` in `SwipeActionCellState.build()` in `lib/src/widget/swipe_action_cell.dart` — run T013 tests to GREEN
+- [x] T013 [US2] Write failing widget tests for decoration interpolation: (a) both decorations set: `ratio=0.0` → resting applied, `ratio=0.5` → blended, `ratio=1.0` → activated, (b) only `restingDecoration` set → resting always, no crash, (c) `ratio > 1.0` → clamped to activated state, no overflow, (d) `Decoration.lerp` returns null (incompatible types) → fallback to resting, no crash — append to `test/widget/swipe_action_cell_painting_test.dart`
+- [x] T014 [US2] Implement `_buildDecoratedChild(Widget translatedChild, SwipeProgress progress) → Widget` helper: guard on `restingDecoration != null || activatedDecoration != null`; compute `t = progress.ratio.clamp(0.0, 1.0)`; use `Decoration.lerp(resting, activated, t) ?? resting`; wrap in `DecoratedBox` in `lib/src/widget/swipe_action_cell.dart`
+- [x] T015 [US2] Replace bare `translatedChild` reference in `Stack` children with `_buildDecoratedChild(translatedChild, progress)` in `SwipeActionCellState.build()` in `lib/src/widget/swipe_action_cell.dart` — run T013 tests to GREEN
 
 **Checkpoint**: `flutter test test/widget/swipe_action_cell_painting_test.dart` (US1 + US2 tests) passes. Decoration interpolation verified.
 
@@ -76,9 +76,9 @@
 
 **Independent Test** (from quickstart.md Scenario 3): Place `SwipeMorphIcon` inside `visualConfig.leftBackground`; verify `startIcon` only at `progress=0.0`, equal blend at `0.5`, `endIcon` only at `1.0`.
 
-- [ ] T016 [P] [US3] Write failing widget tests for `SwipeMorphIcon`: (a) `progress=0.0` → only `startIcon` visible (opacity 1.0), endIcon opacity 0.0, (b) `progress=0.5` → both icons at opacity 0.5, (c) `progress=1.0` → only `endIcon` visible, startIcon opacity 0.0, (d) `progress` clamped: values < 0.0 and > 1.0 do not crash in `test/painting/swipe_morph_icon_test.dart`
-- [ ] T017 [P] [US3] Implement `SwipeMorphIcon extends StatelessWidget` (const constructor; `required startIcon`, `required endIcon`, `required progress`; optional `size`, `color`; `build()` returns `Stack` with two `Opacity`-wrapped icons; clamp `progress.clamp(0.0, 1.0)`; apply `size`/`color` via `IconTheme`; dartdoc on every member) in `lib/src/painting/swipe_morph_icon.dart` — run T016 tests to GREEN
-- [ ] T018 [P] [US3] Add barrel export `export 'src/painting/swipe_morph_icon.dart';` to `lib/swipe_action_cell.dart`
+- [x] T016 [P] [US3] Write failing widget tests for `SwipeMorphIcon`: (a) `progress=0.0` → only `startIcon` visible (opacity 1.0), endIcon opacity 0.0, (b) `progress=0.5` → both icons at opacity 0.5, (c) `progress=1.0` → only `endIcon` visible, startIcon opacity 0.0, (d) `progress` clamped: values < 0.0 and > 1.0 do not crash in `test/painting/swipe_morph_icon_test.dart`
+- [x] T017 [P] [US3] Implement `SwipeMorphIcon extends StatelessWidget` (const constructor; `required startIcon`, `required endIcon`, `required progress`; optional `size`, `color`; `build()` returns `Stack` with two `Opacity`-wrapped icons; clamp `progress.clamp(0.0, 1.0)`; apply `size`/`color` via `IconTheme`; dartdoc on every member) in `lib/src/painting/swipe_morph_icon.dart` — run T016 tests to GREEN
+- [x] T018 [P] [US3] Add barrel export `export 'src/painting/swipe_morph_icon.dart';` to `lib/swipe_action_cell.dart`
 
 **Checkpoint**: `flutter test test/painting/swipe_morph_icon_test.dart` passes. `SwipeMorphIcon` usable standalone.
 
@@ -90,14 +90,14 @@
 
 **Independent Test** (from quickstart.md Scenario 4): Enable `ParticleConfig(count: 12, colors: [...])`. Complete a left-swipe action. Verify 12 particles appear and are gone by 500 ms. Dispose widget mid-animation → no exception, no particles persist.
 
-- [ ] T019 [P] [US4] Write failing unit tests for `SwipeParticlePainter`: (a) `shouldRepaint` returns `true` when `animationValue` changes, `false` when unchanged, (b) `paint()` draws `count` circles on canvas when `animationValue > 0`, (c) no particles drawn when `animationValue == 0.0` in `test/painting/swipe_particle_painter_test.dart`
-- [ ] T020 [P] [US4] Write failing widget tests for particle burst integration: (a) intentional left-swipe action completes → `CustomPaint` with `SwipeParticlePainter` added to tree, (b) progressive right-swipe action completes → no particle layer in tree, (c) `particleConfig: null` → no particle layer ever, (d) `count=0` → no particle layer, (e) dispose widget while particles active → no exception — append to `test/widget/swipe_action_cell_painting_test.dart`
-- [ ] T021 [P] [US4] Implement internal `_Particle` data class (fields: `angle: double`, `maxDistance: double`, `color: Color`) and `SwipeParticlePainter extends CustomPainter` (fields: `particles`, `animationValue`, `origin`; `paint()` draws fading circles using `opacity = 1.0 - animationValue`, distance = `maxDistance * animationValue`; `shouldRepaint` checks `animationValue` and `origin`) in `lib/src/painting/swipe_particle_painter.dart`
-- [ ] T022 [US4] Add particle state fields to `SwipeActionCellState`: `AnimationController? _particleController`, `List<_Particle>? _particles`, `Offset _burstOrigin = Offset.zero`, `double _widgetHeight = 400.0`; initialize `_particleController` in `initState()` when `paintingConfig?.particleConfig != null`; dispose in `dispose()` in `lib/src/widget/swipe_action_cell.dart`
-- [ ] T023 [US4] Implement `_startParticleBurst()` method in `SwipeActionCellState`: guard on `particleConfig.count <= 0`; use `dart:math` `Random()` to generate `_particles` list (angle within `spreadAngle` range, random `maxDistance` 20–60 px, color cycling from `particleConfig.colors` with fallback to default palette when empty); set `_particleController.duration`; call `_particleController.forward(from: 0.0).then((_) { if (mounted) setState(() => _particles = null); })` in `lib/src/widget/swipe_action_cell.dart`
-- [ ] T024 [US4] Add `if (widget.paintingConfig?.particleConfig != null) _startParticleBurst();` call immediately after intentional action fires in `_applyIntentionalAction()` in `lib/src/widget/swipe_action_cell.dart`
-- [ ] T025 [US4] Wire particle burst layer as last Stack child: `if (_particles != null && _particleController != null) Positioned.fill(child: IgnorePointer(child: AnimatedBuilder(animation: _particleController!, builder: (ctx, _) => CustomPaint(painter: SwipeParticlePainter(particles: _particles!, animationValue: _particleController!.value, origin: _burstOrigin)))))` in `SwipeActionCellState.build()` in `lib/src/widget/swipe_action_cell.dart` — run T019 + T020 tests to GREEN
-- [ ] T026 [US4] Add barrel export `export 'src/painting/particle_config.dart';` to `lib/swipe_action_cell.dart`
+- [x] T019 [P] [US4] Write failing unit tests for `SwipeParticlePainter`: (a) `shouldRepaint` returns `true` when `animationValue` changes, `false` when unchanged, (b) `paint()` draws `count` circles on canvas when `animationValue > 0`, (c) no particles drawn when `animationValue == 0.0` in `test/painting/swipe_particle_painter_test.dart`
+- [x] T020 [P] [US4] Write failing widget tests for particle burst integration: (a) intentional left-swipe action completes → `CustomPaint` with `SwipeParticlePainter` added to tree, (b) progressive right-swipe action completes → no particle layer in tree, (c) `particleConfig: null` → no particle layer ever, (d) `count=0` → no particle layer, (e) dispose widget while particles active → no exception — append to `test/widget/swipe_action_cell_painting_test.dart`
+- [x] T021 [P] [US4] Implement internal `_Particle` data class (fields: `angle: double`, `maxDistance: double`, `color: Color`) and `SwipeParticlePainter extends CustomPainter` (fields: `particles`, `animationValue`, `origin`; `paint()` draws fading circles using `opacity = 1.0 - animationValue`, distance = `maxDistance * animationValue`; `shouldRepaint` checks `animationValue` and `origin`) in `lib/src/painting/swipe_particle_painter.dart`
+- [x] T022 [US4] Add particle state fields to `SwipeActionCellState`: `AnimationController? _particleController`, `List<_Particle>? _particles`, `Offset _burstOrigin = Offset.zero`, `double _widgetHeight = 400.0`; initialize `_particleController` in `initState()` when `paintingConfig?.particleConfig != null`; dispose in `dispose()` in `lib/src/widget/swipe_action_cell.dart`
+- [x] T023 [US4] Implement `_startParticleBurst()` method in `SwipeActionCellState`: guard on `particleConfig.count <= 0`; use `dart:math` `Random()` to generate `_particles` list (angle within `spreadAngle` range, random `maxDistance` 20–60 px, color cycling from `particleConfig.colors` with fallback to default palette when empty); set `_particleController.duration`; call `_particleController.forward(from: 0.0).then((_) { if (mounted) setState(() => _particles = null); })` in `lib/src/widget/swipe_action_cell.dart`
+- [x] T024 [US4] Add `if (widget.paintingConfig?.particleConfig != null) _startParticleBurst();` call immediately after intentional action fires in `_applyIntentionalAction()` in `lib/src/widget/swipe_action_cell.dart`
+- [x] T025 [US4] Wire particle burst layer as last Stack child: `if (_particles != null && _particleController != null) Positioned.fill(child: IgnorePointer(child: AnimatedBuilder(animation: _particleController!, builder: (ctx, _) => CustomPaint(painter: SwipeParticlePainter(particles: _particles!, animationValue: _particleController!.value, origin: _burstOrigin)))))` in `SwipeActionCellState.build()` in `lib/src/widget/swipe_action_cell.dart` — run T019 + T020 tests to GREEN
+- [x] T026 [US4] Add barrel export `export 'src/painting/particle_config.dart';` to `lib/swipe_action_cell.dart`
 
 **Checkpoint**: `flutter test test/painting/ test/widget/swipe_action_cell_painting_test.dart` passes. All four user stories independently verified.
 
@@ -107,10 +107,10 @@
 
 **Purpose**: Analysis, format, regression, and quickstart validation.
 
-- [ ] T027 Run `flutter analyze` and fix ALL warnings/errors (zero-warning gate — public_member_api_docs enforced on every new public class/method/field)
-- [ ] T028 Run `dart format .` and verify `dart format --set-exit-if-changed .` exits 0
-- [ ] T029 Run full regression: `flutter test` (all existing tests must continue to pass — no regressions from F001–F012)
-- [ ] T030 Manually validate quickstart.md Scenarios 1–7: painter hooks, decoration interpolation, `SwipeMorphIcon`, particle burst, zero-overhead baseline, incompatible decoration types, rapid direction reversal
+- [x] T027 Run `flutter analyze` and fix ALL warnings/errors (zero-warning gate — public_member_api_docs enforced on every new public class/method/field)
+- [x] T028 Run `dart format .` and verify `dart format --set-exit-if-changed .` exits 0
+- [x] T029 Run full regression: `flutter test` (all existing tests must continue to pass — no regressions from F001–F012)
+- [x] T030 Manually validate quickstart.md Scenarios 1–7: painter hooks, decoration interpolation, `SwipeMorphIcon`, particle burst, zero-overhead baseline, incompatible decoration types, rapid direction reversal
 
 ---
 

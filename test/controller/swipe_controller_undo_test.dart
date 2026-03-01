@@ -43,7 +43,8 @@ void main() {
       expect(notified, isFalse);
     });
 
-    test('undo() and commitPendingUndo() are graceful no-ops after dispose()', () {
+    test('undo() and commitPendingUndo() are graceful no-ops after dispose()',
+        () {
       controller.dispose();
       expect(controller.undo(), isFalse);
       controller.commitPendingUndo();

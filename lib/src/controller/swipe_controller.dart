@@ -175,8 +175,8 @@ class SwipeController extends ChangeNotifier {
   /// when the clamped value differs from the current value.
   ///
   /// No-op (debug assertion in debug mode) when no cell is attached.
-  
-    /// Triggers undo on the attached cell.
+
+  /// Triggers undo on the attached cell.
   bool undo() {
     if (_disposed || !_isUndoPending || _handle == null) return false;
     _handle!.executeUndo();
@@ -255,8 +255,8 @@ class SwipeController extends ChangeNotifier {
   /// unchanged.
   ///
   /// Not for consumer use.
-  
-    /// Reports the undo-pending state change to the controller.
+
+  /// Reports the undo-pending state change to the controller.
   void reportUndoPending(bool isPending) {
     if (_disposed || isPending == _isUndoPending) return;
     _isUndoPending = isPending;

@@ -6,7 +6,6 @@
 /// ```
 library;
 
-
 export 'src/accessibility/swipe_semantic_config.dart';
 export 'src/actions/intentional/left_swipe_mode.dart';
 export 'src/actions/intentional/post_action_behavior.dart';
@@ -32,6 +31,9 @@ export 'src/core/swipe_zone.dart';
 export 'src/core/typedefs.dart';
 export 'src/feedback/swipe_feedback_config.dart';
 export 'src/gesture/swipe_gesture_config.dart';
+export 'src/painting/particle_config.dart';
+export 'src/painting/swipe_morph_icon.dart';
+export 'src/painting/swipe_painting_config.dart';
 export 'src/undo/swipe_undo_config.dart';
 export 'src/undo/undo_data.dart';
 export 'src/visual/swipe_action_background.dart';

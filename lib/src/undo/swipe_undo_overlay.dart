@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'swipe_undo_config.dart';
 
 /// Internal widget rendering the undo bar overlay.
-/// 
+///
 /// Not exported from the package barrel.
 class SwipeUndoOverlay extends StatelessWidget {
   /// Resolved display config.
@@ -29,10 +29,12 @@ class SwipeUndoOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final backgroundColor = config.backgroundColor ?? theme.colorScheme.surfaceContainerHighest;
+    final backgroundColor =
+        config.backgroundColor ?? theme.colorScheme.surfaceContainerHighest;
     final textColor = config.textColor ?? theme.colorScheme.onSurfaceVariant;
     final buttonColor = config.buttonColor ?? theme.colorScheme.primary;
-    final progressBarColor = config.progressBarColor ?? theme.colorScheme.primary.withAlpha(128);
+    final progressBarColor =
+        config.progressBarColor ?? theme.colorScheme.primary.withAlpha(128);
 
     final content = Container(
       color: backgroundColor,
@@ -44,13 +46,15 @@ class SwipeUndoOverlay extends StatelessWidget {
               Expanded(
                 child: Text(
                   config.actionLabel!,
-                  style: config.textStyle ?? theme.textTheme.bodyMedium?.copyWith(color: textColor),
+                  style: config.textStyle ??
+                      theme.textTheme.bodyMedium?.copyWith(color: textColor),
                 ),
               ),
             TextButton(
               onPressed: onUndo,
               style: TextButton.styleFrom(foregroundColor: buttonColor),
-              child: Text(config.undoButtonLabel, semanticsLabel: semanticUndoLabel),
+              child: Text(config.undoButtonLabel,
+                  semanticsLabel: semanticUndoLabel),
             ),
           ],
         ),

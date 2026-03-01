@@ -51,7 +51,8 @@ void main() {
       expect(undoFired, isTrue);
     });
 
-    testWidgets('progress bar width is proportional to animation value', (tester) async {
+    testWidgets('progress bar width is proportional to animation value',
+        (tester) async {
       // This test might be tricky due to FractionallySizedBox
       // We'll just check if it renders for now.
       await tester.pumpWidget(
@@ -97,7 +98,6 @@ void main() {
           isFocusable: true,
           hasTapAction: true,
           hasFocusAction: true,
-          
         ),
       );
     });

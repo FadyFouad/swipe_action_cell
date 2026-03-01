@@ -18,7 +18,8 @@ void main() {
       expect(revertCalled, true);
     });
 
-    test('oldValue and newValue can be null for intentional-action snapshots', () {
+    test('oldValue and newValue can be null for intentional-action snapshots',
+        () {
       final data = UndoData(
         oldValue: null,
         newValue: null,
