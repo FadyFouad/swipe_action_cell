@@ -20,6 +20,11 @@ void main() {
     });
   });
 
+  tearDown(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, null);
+  });
+
   Widget buildCell({
     SwipeFeedbackConfig? feedbackConfig,
     bool legacyHaptic = false,
