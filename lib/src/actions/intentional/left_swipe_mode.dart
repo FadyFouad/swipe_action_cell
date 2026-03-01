@@ -2,7 +2,7 @@
 enum LeftSwipeMode {
   /// A swipe past the activation threshold fires a one-shot action immediately
   /// on animation completion. The cell never enters a persistent open state unless
-  /// [IntentionalSwipeConfig.postActionBehavior] is [PostActionBehavior.stay].
+  /// [LeftSwipeConfig.postActionBehavior] is [PostActionBehavior.stay].
   autoTrigger,
 
   /// A swipe past the activation threshold springs open a panel of action buttons.
