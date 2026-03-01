@@ -1,15 +1,16 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/physics.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
-
 import '../accessibility/swipe_semantic_config.dart';
 import '../actions/intentional/left_swipe_mode.dart';
 import '../actions/intentional/post_action_behavior.dart';
 import '../actions/intentional/swipe_action_panel.dart';
 import '../actions/progressive/progressive_swipe_indicator.dart';
 import '../actions/progressive/progressive_value_logic.dart';
+import '../animation/spring_config.dart';
 import '../animation/swipe_animation_config.dart';
 import '../config/left_swipe_config.dart';
 import '../config/right_swipe_config.dart';
@@ -28,8 +29,12 @@ import '../feedback/feedback_dispatcher.dart';
 import '../feedback/swipe_feedback_config.dart';
 import '../gesture/swipe_gesture_config.dart';
 import '../scroll/swipe_gesture_recognizer.dart';
+import '../undo/swipe_undo_config.dart';
+import '../undo/swipe_undo_overlay.dart';
+import '../undo/undo_data.dart';
 import '../zones/zone_background.dart';
 import '../zones/zone_resolver.dart';
+
 
 /// A widget that wraps any child and provides spring-based horizontal swipe
 /// interaction with asymmetric left/right semantics.
@@ -60,6 +65,7 @@ class SwipeActionCell extends StatefulWidget {
     this.onStateChanged,
     this.onProgressChanged,
     this.feedbackConfig,
+    this.undoConfig,
   });
 
   /// The widget displayed inside the swipe cell.
@@ -147,6 +153,9 @@ class SwipeActionCell extends StatefulWidget {
   /// Per-cell feedback configuration.
   final SwipeFeedbackConfig? feedbackConfig;
 
+  /// Configuration for undo/revert support.
+  final SwipeUndoConfig? undoConfig;
+
   @override
   State<SwipeActionCell> createState() => SwipeActionCellState();
 }
@@ -161,6 +170,14 @@ class SwipeActionCellState extends State<SwipeActionCell>
   SwipeState _state = SwipeState.idle;
   SwipeDirection _lockedDirection = SwipeDirection.none;
   double _accumulatedDx = 0.0;
+
+  // F11 undo fields.
+  bool _undoPending = false;
+  double? _undoOldValue;
+  double? _undoNewValue;
+  PostActionBehavior? _lastPostActionBehavior;
+  Timer? _undoTimer;
+  AnimationController? _undoBarController;
 
   // F3 progressive fields.
   ValueNotifier<double>? _progressValueNotifier;
@@ -249,6 +266,86 @@ class SwipeActionCellState extends State<SwipeActionCell>
           ? _resolvedBackwardConfig!.zones
           : null;
 
+
+  // ── F11: Undo Logic ───────────────────────────────────────────────────────
+
+  void _startUndoWindow() {
+    final config = widget.undoConfig;
+    if (config == null) return;
+
+    _undoTimer?.cancel();
+    _undoBarController?.stop();
+    _undoBarController?.value = 1.0;
+
+    _undoPending = true;
+    _effectiveController.reportUndoPending(true);
+
+    final data = UndoData(
+      oldValue: _undoOldValue,
+      newValue: _undoNewValue,
+      remainingDuration: config.duration,
+      revert: _triggerUndo,
+    );
+
+    config.onUndoAvailable?.call(data);
+
+    if (MediaQuery.of(context).disableAnimations != true) {
+      _undoBarController?.reverse();
+    }
+
+    _undoTimer = Timer(config.duration, _commitUndo);
+    setState(() {});
+  }
+
+  void _triggerUndo() {
+    if (!_undoPending || !mounted) return;
+
+    _undoTimer?.cancel();
+    _undoBarController?.stop();
+    _undoPending = false;
+    _effectiveController.reportUndoPending(false);
+
+    if (_lastPostActionBehavior == PostActionBehavior.animateOut) {
+      _updateState(SwipeState.animatingToClose);
+      final simulation = SpringSimulation(
+        SpringDescription(
+          mass: SpringConfig.undoReveal.mass,
+          stiffness: SpringConfig.undoReveal.stiffness,
+          damping: SpringConfig.undoReveal.damping,
+        ),
+        _controller.value,
+        0.0,
+        0.0,
+      );
+      _controller.animateWith(simulation);
+    } else if (_undoOldValue != null) {
+      _progressValueNotifier!.value = _undoOldValue!;
+      _effectiveController.reportProgress(_undoOldValue!);
+    }
+
+    widget.undoConfig?.onUndoTriggered?.call();
+    setState(() {});
+  }
+
+  void _commitUndo() {
+    if (!_undoPending || !mounted) return;
+
+    _undoTimer?.cancel();
+    _undoBarController?.stop();
+    _undoPending = false;
+    _effectiveController.reportUndoPending(false);
+
+    widget.undoConfig?.onUndoExpired?.call();
+    setState(() {});
+  }
+
+  @override
+  void executeUndo() => _triggerUndo();
+
+  @override
+  void executeCommitUndo() => _commitUndo();
+
+
   void _fireZoneHaptic(SwipeZoneHaptic? pattern) {
     if (pattern == null) return;
     switch (pattern) {
@@ -325,6 +422,15 @@ class SwipeActionCellState extends State<SwipeActionCell>
   @override
   void initState() {
     super.initState();
+    // F11: initialize undo bar controller.
+    if (widget.undoConfig != null) {
+      _undoBarController = AnimationController(
+        vsync: this,
+        value: 1.0,
+        duration: widget.undoConfig!.duration,
+      );
+    }
+
     _controller = AnimationController(
       vsync: this,
       lowerBound: double.negativeInfinity,
@@ -366,6 +472,23 @@ class SwipeActionCellState extends State<SwipeActionCell>
       final oldController = oldWidget.controller ?? _internalController!;
       _registeredGroup?.unregister(oldController);
       oldController.detach(this);
+    // F11: handle undoConfig change.
+    if (widget.undoConfig != oldWidget.undoConfig) {
+      if (widget.undoConfig == null) {
+        _undoTimer?.cancel();
+        _undoBarController?.dispose();
+        _undoBarController = null;
+      } else if (_undoBarController == null) {
+        _undoBarController = AnimationController(
+          vsync: this,
+          value: 1.0,
+          duration: widget.undoConfig!.duration,
+        );
+      } else {
+        _undoBarController!.duration = widget.undoConfig!.duration;
+      }
+    }
+
 
       if (widget.controller == null && _internalController == null) {
         _internalController = SwipeController();
@@ -392,6 +515,8 @@ class SwipeActionCellState extends State<SwipeActionCell>
     _progressValueNotifier?.dispose();
     // F8: dispose focus node.
     _cellFocusNode.dispose();
+        _undoTimer?.cancel();
+    _undoBarController?.dispose();
     super.dispose();
   }
 
@@ -502,6 +627,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
           _handleIntentionalActionSettled();
         } else {
           _updateState(SwipeState.revealed);
+        if (widget.undoConfig != null && _resolvedBackwardConfig?.mode == LeftSwipeMode.autoTrigger) _startUndoWindow();
         }
       }
     }
@@ -545,6 +671,9 @@ class SwipeActionCellState extends State<SwipeActionCell>
 
   void _applyPostActionBehavior() {
     final config = _resolvedBackwardConfig!;
+    _lastPostActionBehavior = config.postActionBehavior;
+    _undoOldValue = null;
+    _undoNewValue = null;
     switch (config.postActionBehavior) {
       case PostActionBehavior.snapBack:
         _isPostActionSnapBack = true;
@@ -553,12 +682,17 @@ class SwipeActionCellState extends State<SwipeActionCell>
       case PostActionBehavior.animateOut:
         _updateState(SwipeState.animatingOut);
         _animateOut();
+        if (widget.undoConfig != null) _startUndoWindow();
       case PostActionBehavior.stay:
         _updateState(SwipeState.revealed);
     }
   }
 
   void _animateOut() {
+    if (MediaQuery.of(context).disableAnimations) {
+      _controller.value = -(_widgetWidth * 1.5);
+      return;
+    }
     final spring = effectiveAnimationConfig.completionSpring;
     final simulation = SpringSimulation(
       SpringDescription(
@@ -585,6 +719,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
   void _applyProgressiveIncrement() {
     final config = _resolvedForwardConfig!;
     final current = _progressValueNotifier!.value;
+    _undoOldValue = current;
 
     // F009: Use zone step value if present
     final step = (_activeZoneAtRelease != null && _dragIsForward)
@@ -615,6 +750,8 @@ class SwipeActionCellState extends State<SwipeActionCell>
     }
 
     config.onSwipeCompleted?.call(result.nextValue);
+    _undoNewValue = result.nextValue;
+    if (widget.undoConfig != null) _startUndoWindow();
     // F8: announce progress after increment.
     _announceProgress(result.nextValue, config.maxValue);
   }
@@ -648,6 +785,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
   }
 
   void _handleDragStart(DragStartDetails details) {
+    if (_undoPending) _commitUndo();
     if (_state == SwipeState.animatingOut) return;
     _controller.stop();
     _accumulatedDx = 0.0;
@@ -821,6 +959,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
     // F8: reduced motion — instant snap.
     if (MediaQuery.of(context).disableAnimations) {
       _controller.value = 0.0;
+      _handleAnimationStatusChange(AnimationStatus.completed);
       return;
     }
     final spring = effectiveAnimationConfig.snapBackSpring;
@@ -840,6 +979,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
     // F8: reduced motion — instant jump.
     if (MediaQuery.of(context).disableAnimations) {
       _controller.value = toOffset;
+      _handleAnimationStatusChange(AnimationStatus.completed);
       return;
     }
     final spring = effectiveAnimationConfig.completionSpring;
@@ -1174,6 +1314,25 @@ class SwipeActionCellState extends State<SwipeActionCell>
                       _hapticThresholdFired = true;
                     }
                     widget.onProgressChanged?.call(progress);
+
+                    final undoOverlay = (widget.undoConfig != null &&
+                            widget.undoConfig!.showBuiltInOverlay &&
+                            _undoPending &&
+                            _undoBarController != null)
+                        ? Positioned(
+                            left: 0,
+                            right: 0,
+                            top: widget.undoConfig!.overlayConfig?.position == SwipeUndoOverlayPosition.top ? 0 : null,
+                            bottom: (widget.undoConfig!.overlayConfig?.position ?? SwipeUndoOverlayPosition.bottom) == SwipeUndoOverlayPosition.bottom ? 0 : null,
+                            child: SwipeUndoOverlay(
+                              config: widget.undoConfig!.overlayConfig ?? const SwipeUndoOverlayConfig(),
+                              progressAnimation: _undoBarController!,
+                              onUndo: _triggerUndo,
+                              semanticUndoLabel: widget.undoConfig!.overlayConfig?.undoButtonLabel ?? 'Undo',
+                            ),
+                          )
+                        : null;
+
                     final translatedChild = Transform.translate(
                       offset: Offset(offset, 0),
                       child: _maybeWrapWithBodyTapInterceptor(child!),
@@ -1201,6 +1360,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
                           _buildRevealPanel(width),
                         if (confirmOverlay != null) confirmOverlay,
                         translatedChild,
+                        if (undoOverlay != null) undoOverlay,
                         if (_resolvedForwardConfig != null &&
                             _resolvedForwardConfig!.showProgressIndicator)
                           _buildProgressIndicator(),
