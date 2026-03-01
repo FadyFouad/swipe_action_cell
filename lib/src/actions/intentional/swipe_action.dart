@@ -3,7 +3,7 @@ import 'package:flutter/widgets.dart';
 /// Defines a single action button in a reveal-mode [SwipeActionCell] panel.
 ///
 /// Pass a list of 1–3 [SwipeAction] objects to
-/// [IntentionalSwipeConfig.actions]. More than 3 entries: only the first 3
+/// [LeftSwipeConfig.actions]. More than 3 entries: only the first 3
 /// are rendered (debug assertion).
 ///
 /// Example:
