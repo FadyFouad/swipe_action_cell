@@ -2,6 +2,26 @@ import 'package:flutter/material.dart';
 import '../controller/swipe_controller.dart';
 
 /// Wraps a [SwipeActionCell] with all required test ancestors.
+///
+/// Use this in widget tests instead of `MaterialApp` to avoid the overhead
+/// of full Material routing while still providing [Directionality],
+/// [MediaQuery], [Localizations], and [Material]:
+///
+/// ```dart
+/// testWidgets('delete fires after undo window', (tester) async {
+///   bool deleted = false;
+///   await tester.pumpWidget(SwipeTestHarness(
+///     child: SwipeActionCell.delete(
+///       onDeleted: () => deleted = true,
+///       child: const ListTile(title: Text('Item')),
+///     ),
+///   ));
+///   await SwipeTester.swipeLeft(tester, find.byType(SwipeActionCell));
+///   // undo window: advance clock
+///   await tester.pump(const Duration(seconds: 6));
+///   expect(deleted, isTrue);
+/// });
+/// ```
 class SwipeTestHarness extends StatelessWidget {
   /// Creates a [SwipeTestHarness].
   const SwipeTestHarness({

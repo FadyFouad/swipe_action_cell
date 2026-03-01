@@ -10,6 +10,23 @@ import '../core/typedefs.dart';
 /// Pass as [SwipeActionCell.rightSwipeConfig] to enable progressive right-swipe
 /// semantics. When `null`, right-swipe progressive behavior is disabled entirely.
 ///
+/// Each successful right swipe adds [stepValue] to the cumulative value and
+/// fires [onSwipeCompleted] with the new total:
+///
+/// ```dart
+/// rightSwipeConfig: RightSwipeConfig(
+///   stepValue: 1.0,
+///   maxValue: 10.0,
+///   overflowBehavior: OverflowBehavior.clamp,
+///   enableHaptic: true,
+///   onSwipeCompleted: (newValue) => setState(() => _count = newValue.toInt()),
+/// )
+/// ```
+///
+/// For a progress bar that fills as the cumulative value approaches [maxValue],
+/// set [showProgressIndicator] to `true` or drive a custom painter via
+/// [SwipeVisualConfig.rightBackground] using [SwipeProgress.ratio].
+///
 /// Renamed from `ProgressiveSwipeConfig` in F005. All fields and semantics are
 /// preserved.
 @immutable

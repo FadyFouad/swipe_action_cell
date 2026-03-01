@@ -2,6 +2,20 @@ import '../controller/swipe_controller.dart';
 import '../core/swipe_state.dart';
 
 /// Test double for [SwipeController] that records method invocations.
+///
+/// Use in unit tests to verify that a component calls controller methods
+/// without needing a real [SwipeActionCell]:
+///
+/// ```dart
+/// test('button calls openLeft on tap', () async {
+///   final mock = MockSwipeController();
+///   // inject mock into the widget under test
+///   expect(mock.openLeftCallCount, 0);
+///   // simulate tap
+///   mock.openLeft();
+///   expect(mock.openLeftCallCount, 1);
+/// });
+/// ```
 class MockSwipeController extends SwipeController {
   int _openLeft = 0;
   int _openRight = 0;

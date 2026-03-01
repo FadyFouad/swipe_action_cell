@@ -47,6 +47,35 @@ import '../zones/zone_resolver.dart';
 
 /// A widget that wraps any child and provides spring-based horizontal swipe
 /// interaction with asymmetric left/right semantics.
+///
+/// Right swipe is the **progressive** direction: incremental value tracking,
+/// counter increments, or any repeatable action. Left swipe is the
+/// **intentional** direction: auto-trigger (delete/archive) or reveal (action panel).
+///
+/// ```dart
+/// SwipeActionCell(
+///   rightSwipeConfig: RightSwipeConfig(
+///     onSwipeCompleted: (value) => print('Count: $value'),
+///   ),
+///   leftSwipeConfig: LeftSwipeConfig(
+///     mode: LeftSwipeMode.reveal,
+///     actions: [
+///       SwipeAction(
+///         icon: const Icon(Icons.delete),
+///         label: 'Delete',
+///         backgroundColor: Colors.red,
+///         foregroundColor: Colors.white,
+///         onTap: () => deleteItem(),
+///       ),
+///     ],
+///   ),
+///   child: const ListTile(title: Text('Swipe me')),
+/// )
+/// ```
+///
+/// For the simplest use case, prefer the factory constructors:
+/// [SwipeActionCell.delete], [SwipeActionCell.archive], [SwipeActionCell.favorite],
+/// [SwipeActionCell.checkbox], [SwipeActionCell.counter], [SwipeActionCell.standard].
 class SwipeActionCell extends StatefulWidget {
   /// Creates a [SwipeActionCell].
   ///
