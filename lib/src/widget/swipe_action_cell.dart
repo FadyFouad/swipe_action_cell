@@ -864,7 +864,8 @@ class SwipeActionCellState extends State<SwipeActionCell>
   void _startUndoWindow() {
     final config = widget.undoConfig;
     if (config == null) return;
-    _particleController?.dispose();
+    _particleController?.stop();
+    _particles = null;
     _undoTimer?.cancel();
     _undoBarController?.stop();
     _undoBarController?.value = 1.0;
@@ -886,7 +887,8 @@ class SwipeActionCellState extends State<SwipeActionCell>
 
   void _triggerUndo() {
     if (!_undoPending || !mounted) return;
-    _particleController?.dispose();
+    _particleController?.stop();
+    _particles = null;
     _undoTimer?.cancel();
     _undoBarController?.stop();
     _undoPending = false;
@@ -914,7 +916,8 @@ class SwipeActionCellState extends State<SwipeActionCell>
 
   void _commitUndo() {
     if (!_undoPending || !mounted) return;
-    _particleController?.dispose();
+    _particleController?.stop();
+    _particles = null;
     _undoTimer?.cancel();
     _undoBarController?.stop();
     _undoPending = false;
