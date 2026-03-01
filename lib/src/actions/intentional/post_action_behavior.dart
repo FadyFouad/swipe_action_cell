@@ -9,7 +9,7 @@ enum PostActionBehavior {
   ///
   /// The widget does NOT collapse its own height. The developer is responsible
   /// for removing the item from their list in response to
-  /// [IntentionalSwipeConfig.onActionTriggered].
+  /// [LeftSwipeConfig.onActionTriggered].
   animateOut,
 
   /// The cell remains at the fully-swiped position with the background visible.
