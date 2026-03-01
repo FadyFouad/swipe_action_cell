@@ -127,6 +127,8 @@ Phase 4 (Polish):   F14 → F15 → F16 → F17
 - N/A (in-memory state only; no persistence) (006-controller-group)
 - Dart >=3.4.0 <4.0.0 + Flutter >=3.22.0 + Flutter SDK only (zero external runtime deps — Constitution IV) (010-unified-feedback)
 - N/A (in-memory undo state only; persistence is consumer responsibility) (011-swipe-undo)
+- Dart ≥ 3.4.0 < 4.0.0 + Flutter SDK only — `dart:math` for particle angle computation (stdlib, no external package) (012-custom-painter)
+- N/A (no persistence) (012-custom-painter)
 
 ## Recent Changes
 - 001-gesture-animation: Added Dart >=3.4.0 + Flutter SDK only (zero external runtime deps — Constitution IV)
