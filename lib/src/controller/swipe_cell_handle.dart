@@ -23,4 +23,10 @@ abstract class SwipeCellHandle {
   /// Sets the progressive value to [value], clamped to
   /// [RightSwipeConfig.minValue]..[RightSwipeConfig.maxValue].
   void executeSetProgress(double value);
+
+  /// Triggers undo on the cell if an undo window is currently pending.
+  void executeUndo();
+
+  /// Force-commits the pending undo immediately, as if the timer expired.
+  void executeCommitUndo();
 }

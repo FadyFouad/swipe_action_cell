@@ -1,4 +1,8 @@
+import 'dart:async';
+import 'dart:math' as math;
+
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart' show Colors, ColoredBox;
 import 'package:flutter/physics.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
@@ -7,9 +11,11 @@ import 'package:flutter/widgets.dart';
 import '../accessibility/swipe_semantic_config.dart';
 import '../actions/intentional/left_swipe_mode.dart';
 import '../actions/intentional/post_action_behavior.dart';
+import '../actions/intentional/swipe_action.dart';
 import '../actions/intentional/swipe_action_panel.dart';
 import '../actions/progressive/progressive_swipe_indicator.dart';
 import '../actions/progressive/progressive_value_logic.dart';
+import '../animation/spring_config.dart';
 import '../animation/swipe_animation_config.dart';
 import '../config/left_swipe_config.dart';
 import '../config/right_swipe_config.dart';
@@ -27,12 +33,49 @@ import '../core/swipe_zone.dart';
 import '../feedback/feedback_dispatcher.dart';
 import '../feedback/swipe_feedback_config.dart';
 import '../gesture/swipe_gesture_config.dart';
+import '../painting/swipe_morph_icon.dart';
+import '../painting/swipe_painting_config.dart';
+import '../painting/swipe_particle_painter.dart';
 import '../scroll/swipe_gesture_recognizer.dart';
+import '../templates/swipe_cell_templates.dart';
+import '../templates/template_style.dart';
+import '../undo/swipe_undo_config.dart';
+import '../undo/swipe_undo_overlay.dart';
+import '../undo/undo_data.dart';
 import '../zones/zone_background.dart';
 import '../zones/zone_resolver.dart';
 
 /// A widget that wraps any child and provides spring-based horizontal swipe
 /// interaction with asymmetric left/right semantics.
+///
+/// Right swipe is the **progressive** direction: incremental value tracking,
+/// counter increments, or any repeatable action. Left swipe is the
+/// **intentional** direction: auto-trigger (delete/archive) or reveal (action panel).
+///
+/// ```dart
+/// SwipeActionCell(
+///   rightSwipeConfig: RightSwipeConfig(
+///     onSwipeCompleted: (value) => print('Count: $value'),
+///   ),
+///   leftSwipeConfig: LeftSwipeConfig(
+///     mode: LeftSwipeMode.reveal,
+///     actions: [
+///       SwipeAction(
+///         icon: const Icon(Icons.delete),
+///         label: 'Delete',
+///         backgroundColor: Colors.red,
+///         foregroundColor: Colors.white,
+///         onTap: () => deleteItem(),
+///       ),
+///     ],
+///   ),
+///   child: const ListTile(title: Text('Swipe me')),
+/// )
+/// ```
+///
+/// For the simplest use case, prefer the factory constructors:
+/// [SwipeActionCell.delete], [SwipeActionCell.archive], [SwipeActionCell.favorite],
+/// [SwipeActionCell.checkbox], [SwipeActionCell.counter], [SwipeActionCell.standard].
 class SwipeActionCell extends StatefulWidget {
   /// Creates a [SwipeActionCell].
   ///
@@ -60,6 +103,8 @@ class SwipeActionCell extends StatefulWidget {
     this.onStateChanged,
     this.onProgressChanged,
     this.feedbackConfig,
+    this.undoConfig,
+    this.paintingConfig,
   });
 
   /// The widget displayed inside the swipe cell.
@@ -147,6 +192,533 @@ class SwipeActionCell extends StatefulWidget {
   /// Per-cell feedback configuration.
   final SwipeFeedbackConfig? feedbackConfig;
 
+  /// Configuration for undo/revert support.
+  final SwipeUndoConfig? undoConfig;
+
+  /// Configuration for custom painting and decoration hooks.
+  final SwipePaintingConfig? paintingConfig;
+  @override
+
+  /// Creates a [SwipeActionCell] configured for a delete action.
+  factory SwipeActionCell.delete({
+    required Widget child,
+    required VoidCallback onDeleted,
+    Color? backgroundColor,
+    Widget? icon,
+    String? semanticLabel,
+    TemplateStyle style = TemplateStyle.auto,
+    SwipeController? controller,
+  }) {
+    final resolved = resolveStyle(style);
+    final assets = deleteAssets(resolved, icon, backgroundColor);
+    return SwipeActionCell(
+      controller: controller,
+      leftSwipeConfig: const LeftSwipeConfig(
+        mode: LeftSwipeMode.autoTrigger,
+        postActionBehavior: PostActionBehavior.animateOut,
+        enableHaptic: true,
+      ),
+      undoConfig: SwipeUndoConfig(
+        onUndoExpired: onDeleted,
+      ),
+      visualConfig: buildVisualConfig(
+        resolvedStyle: resolved,
+        leftBackground: (context, progress) => ColoredBox(
+          color: assets.backgroundColor,
+          child: Align(
+            alignment: AlignmentDirectional.centerEnd,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: assets.primaryIcon,
+            ),
+          ),
+        ),
+      ),
+      semanticConfig: SwipeSemanticConfig(
+        leftSwipeLabel: SemanticLabel.string(semanticLabel ?? 'Delete item'),
+      ),
+      child: child,
+    );
+  }
+
+  /// Creates a [SwipeActionCell] configured for an archive action.
+  factory SwipeActionCell.archive({
+    required Widget child,
+    required VoidCallback onArchived,
+    Color? backgroundColor,
+    Widget? icon,
+    String? semanticLabel,
+    TemplateStyle style = TemplateStyle.auto,
+    SwipeController? controller,
+  }) {
+    final resolved = resolveStyle(style);
+    final assets = archiveAssets(resolved, icon, backgroundColor);
+    return SwipeActionCell(
+      controller: controller,
+      leftSwipeConfig: LeftSwipeConfig(
+        mode: LeftSwipeMode.autoTrigger,
+        postActionBehavior: PostActionBehavior.animateOut,
+        onActionTriggered: onArchived,
+        enableHaptic: true,
+      ),
+      visualConfig: buildVisualConfig(
+        resolvedStyle: resolved,
+        leftBackground: (context, progress) => ColoredBox(
+          color: assets.backgroundColor,
+          child: Align(
+            alignment: AlignmentDirectional.centerEnd,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: assets.primaryIcon,
+            ),
+          ),
+        ),
+      ),
+      semanticConfig: SwipeSemanticConfig(
+        leftSwipeLabel: SemanticLabel.string(semanticLabel ?? 'Archive item'),
+      ),
+      child: child,
+    );
+  }
+
+  /// Creates a [SwipeActionCell] configured for a favorite toggle action.
+  factory SwipeActionCell.favorite({
+    required Widget child,
+    required bool isFavorited,
+    required ValueChanged<bool> onToggle,
+    Color? backgroundColor,
+    Widget? outlineIcon,
+    Widget? filledIcon,
+    String? semanticLabel,
+    TemplateStyle style = TemplateStyle.auto,
+    SwipeController? controller,
+  }) {
+    final resolved = resolveStyle(style);
+    final assets =
+        favoriteAssets(resolved, outlineIcon, filledIcon, backgroundColor);
+    return SwipeActionCell(
+      controller: controller,
+      rightSwipeConfig: RightSwipeConfig(
+        onSwipeCompleted: (_) => onToggle(!isFavorited),
+        enableHaptic: true,
+      ),
+      visualConfig: buildVisualConfig(
+        resolvedStyle: resolved,
+        rightBackground: (context, progress) => ColoredBox(
+          color: assets.backgroundColor,
+          child: Center(
+            child: SwipeMorphIcon(
+              startIcon: assets.outlineIcon,
+              endIcon: assets.filledIcon,
+              progress: progress.ratio,
+            ),
+          ),
+        ),
+      ),
+      semanticConfig: SwipeSemanticConfig(
+        rightSwipeLabel: SemanticLabel.string(
+          semanticLabel ??
+              (isFavorited ? 'Remove from favorites' : 'Add to favorites'),
+        ),
+      ),
+      child: child,
+    );
+  }
+
+  /// Creates a [SwipeActionCell] configured for a checkbox toggle action.
+  factory SwipeActionCell.checkbox({
+    required Widget child,
+    required bool isChecked,
+    required ValueChanged<bool> onChanged,
+    Color? backgroundColor,
+    Widget? uncheckedIcon,
+    Widget? checkedIcon,
+    String? semanticLabel,
+    TemplateStyle style = TemplateStyle.auto,
+    SwipeController? controller,
+  }) {
+    final resolved = resolveStyle(style);
+    final assets =
+        checkboxAssets(resolved, uncheckedIcon, checkedIcon, backgroundColor);
+    return SwipeActionCell(
+      controller: controller,
+      rightSwipeConfig: RightSwipeConfig(
+        onSwipeCompleted: (_) => onChanged(!isChecked),
+        enableHaptic: true,
+      ),
+      visualConfig: buildVisualConfig(
+        resolvedStyle: resolved,
+        rightBackground: (context, progress) => ColoredBox(
+          color: assets.backgroundColor,
+          child: Center(
+            child: SwipeMorphIcon(
+              startIcon: assets.uncheckedIcon,
+              endIcon: assets.checkedIcon,
+              progress: progress.ratio,
+            ),
+          ),
+        ),
+      ),
+      semanticConfig: SwipeSemanticConfig(
+        rightSwipeLabel: SemanticLabel.string(
+          semanticLabel ??
+              (isChecked ? 'Mark as incomplete' : 'Mark as complete'),
+        ),
+      ),
+      child: child,
+    );
+  }
+
+  /// Creates a [SwipeActionCell] configured for a counter increment action.
+  factory SwipeActionCell.counter({
+    required Widget child,
+    required int count,
+    required ValueChanged<int> onCountChanged,
+    int? max,
+    Color? backgroundColor,
+    Widget? icon,
+    String? semanticLabel,
+    TemplateStyle style = TemplateStyle.auto,
+    SwipeController? controller,
+  }) {
+    final resolved = resolveStyle(style);
+    final assets = counterAssets(resolved, icon, backgroundColor);
+    final atMax = max != null && max > 0 && count >= max;
+    return SwipeActionCell(
+      controller: controller,
+      rightSwipeConfig: atMax
+          ? null
+          : RightSwipeConfig(
+              onSwipeCompleted: (_) => onCountChanged(count + 1),
+              enableHaptic: true,
+            ),
+      visualConfig: buildVisualConfig(
+        resolvedStyle: resolved,
+        rightBackground: atMax
+            ? null
+            : (context, progress) => ColoredBox(
+                  color: assets.backgroundColor,
+                  child: Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        assets.primaryIcon,
+                        const SizedBox(width: 8),
+                        Text(
+                          '$count',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+      ),
+      semanticConfig: SwipeSemanticConfig(
+        rightSwipeLabel: SemanticLabel.string(semanticLabel ?? 'Increment'),
+      ),
+      child: child,
+    );
+  }
+
+  /// Creates a [SwipeActionCell] configured with a standard reveal action panel
+  /// and a favorite toggle shortcut.
+  factory SwipeActionCell.standard({
+    required Widget child,
+    ValueChanged<bool>? onFavorited,
+    bool isFavorited = false,
+    List<SwipeAction>? actions,
+    TemplateStyle style = TemplateStyle.auto,
+    SwipeController? controller,
+  }) {
+    final resolved = resolveStyle(style);
+    final favAssets = favoriteAssets(resolved, null, null, null);
+    final hasRight = onFavorited != null;
+    final hasLeft = actions != null && actions.isNotEmpty;
+    return SwipeActionCell(
+      controller: controller,
+      rightSwipeConfig: hasRight
+          ? RightSwipeConfig(
+              onSwipeCompleted: (_) => onFavorited(!isFavorited),
+              enableHaptic: true,
+            )
+          : null,
+      leftSwipeConfig: hasLeft
+          ? LeftSwipeConfig(
+              mode: LeftSwipeMode.reveal,
+              actions: actions,
+              enableHaptic: true,
+            )
+          : null,
+      visualConfig: buildVisualConfig(
+        resolvedStyle: resolved,
+        rightBackground: hasRight
+            ? (context, progress) => ColoredBox(
+                  color: favAssets.backgroundColor,
+                  child: Center(
+                    child: SwipeMorphIcon(
+                      startIcon: favAssets.outlineIcon,
+                      endIcon: favAssets.filledIcon,
+                      progress: progress.ratio,
+                    ),
+                  ),
+                )
+            : null,
+      ),
+      child: child,
+    );
+  }
+
+  /// Creates a [SwipeActionCell] delete template with forced Material styling.
+  static SwipeActionCell deleteMaterial({
+    required Widget child,
+    required VoidCallback onDeleted,
+    Color? backgroundColor,
+    Widget? icon,
+    String? semanticLabel,
+    SwipeController? controller,
+  }) =>
+      SwipeActionCell.delete(
+        onDeleted: onDeleted,
+        backgroundColor: backgroundColor,
+        icon: icon,
+        semanticLabel: semanticLabel,
+        style: TemplateStyle.material,
+        controller: controller,
+        child: child,
+      );
+
+  /// Creates a [SwipeActionCell] delete template with forced Cupertino styling.
+  static SwipeActionCell deleteCupertino({
+    required Widget child,
+    required VoidCallback onDeleted,
+    Color? backgroundColor,
+    Widget? icon,
+    String? semanticLabel,
+    SwipeController? controller,
+  }) =>
+      SwipeActionCell.delete(
+        onDeleted: onDeleted,
+        backgroundColor: backgroundColor,
+        icon: icon,
+        semanticLabel: semanticLabel,
+        style: TemplateStyle.cupertino,
+        controller: controller,
+        child: child,
+      );
+
+  /// Creates a [SwipeActionCell] archive template with forced Material styling.
+  static SwipeActionCell archiveMaterial({
+    required Widget child,
+    required VoidCallback onArchived,
+    Color? backgroundColor,
+    Widget? icon,
+    String? semanticLabel,
+    SwipeController? controller,
+  }) =>
+      SwipeActionCell.archive(
+        onArchived: onArchived,
+        backgroundColor: backgroundColor,
+        icon: icon,
+        semanticLabel: semanticLabel,
+        style: TemplateStyle.material,
+        controller: controller,
+        child: child,
+      );
+
+  /// Creates a [SwipeActionCell] archive template with forced Cupertino styling.
+  static SwipeActionCell archiveCupertino({
+    required Widget child,
+    required VoidCallback onArchived,
+    Color? backgroundColor,
+    Widget? icon,
+    String? semanticLabel,
+    SwipeController? controller,
+  }) =>
+      SwipeActionCell.archive(
+        onArchived: onArchived,
+        backgroundColor: backgroundColor,
+        icon: icon,
+        semanticLabel: semanticLabel,
+        style: TemplateStyle.cupertino,
+        controller: controller,
+        child: child,
+      );
+
+  /// Creates a [SwipeActionCell] favorite template with forced Material styling.
+  static SwipeActionCell favoriteMaterial({
+    required Widget child,
+    required bool isFavorited,
+    required ValueChanged<bool> onToggle,
+    Color? backgroundColor,
+    Widget? outlineIcon,
+    Widget? filledIcon,
+    String? semanticLabel,
+    SwipeController? controller,
+  }) =>
+      SwipeActionCell.favorite(
+        isFavorited: isFavorited,
+        onToggle: onToggle,
+        backgroundColor: backgroundColor,
+        outlineIcon: outlineIcon,
+        filledIcon: filledIcon,
+        semanticLabel: semanticLabel,
+        style: TemplateStyle.material,
+        controller: controller,
+        child: child,
+      );
+
+  /// Creates a [SwipeActionCell] favorite template with forced Cupertino styling.
+  static SwipeActionCell favoriteCupertino({
+    required Widget child,
+    required bool isFavorited,
+    required ValueChanged<bool> onToggle,
+    Color? backgroundColor,
+    Widget? outlineIcon,
+    Widget? filledIcon,
+    String? semanticLabel,
+    SwipeController? controller,
+  }) =>
+      SwipeActionCell.favorite(
+        isFavorited: isFavorited,
+        onToggle: onToggle,
+        backgroundColor: backgroundColor,
+        outlineIcon: outlineIcon,
+        filledIcon: filledIcon,
+        semanticLabel: semanticLabel,
+        style: TemplateStyle.cupertino,
+        controller: controller,
+        child: child,
+      );
+
+  /// Creates a [SwipeActionCell] checkbox template with forced Material styling.
+  static SwipeActionCell checkboxMaterial({
+    required Widget child,
+    required bool isChecked,
+    required ValueChanged<bool> onChanged,
+    Color? backgroundColor,
+    Widget? uncheckedIcon,
+    Widget? checkedIcon,
+    String? semanticLabel,
+    SwipeController? controller,
+  }) =>
+      SwipeActionCell.checkbox(
+        isChecked: isChecked,
+        onChanged: onChanged,
+        backgroundColor: backgroundColor,
+        uncheckedIcon: uncheckedIcon,
+        checkedIcon: checkedIcon,
+        semanticLabel: semanticLabel,
+        style: TemplateStyle.material,
+        controller: controller,
+        child: child,
+      );
+
+  /// Creates a [SwipeActionCell] checkbox template with forced Cupertino styling.
+  static SwipeActionCell checkboxCupertino({
+    required Widget child,
+    required bool isChecked,
+    required ValueChanged<bool> onChanged,
+    Color? backgroundColor,
+    Widget? uncheckedIcon,
+    Widget? checkedIcon,
+    String? semanticLabel,
+    SwipeController? controller,
+  }) =>
+      SwipeActionCell.checkbox(
+        isChecked: isChecked,
+        onChanged: onChanged,
+        backgroundColor: backgroundColor,
+        uncheckedIcon: uncheckedIcon,
+        checkedIcon: checkedIcon,
+        semanticLabel: semanticLabel,
+        style: TemplateStyle.cupertino,
+        controller: controller,
+        child: child,
+      );
+
+  /// Creates a [SwipeActionCell] counter template with forced Material styling.
+  static SwipeActionCell counterMaterial({
+    required Widget child,
+    required int count,
+    required ValueChanged<int> onCountChanged,
+    int? max,
+    Color? backgroundColor,
+    Widget? icon,
+    String? semanticLabel,
+    SwipeController? controller,
+  }) =>
+      SwipeActionCell.counter(
+        count: count,
+        onCountChanged: onCountChanged,
+        max: max,
+        backgroundColor: backgroundColor,
+        icon: icon,
+        semanticLabel: semanticLabel,
+        style: TemplateStyle.material,
+        controller: controller,
+        child: child,
+      );
+
+  /// Creates a [SwipeActionCell] counter template with forced Cupertino styling.
+  static SwipeActionCell counterCupertino({
+    required Widget child,
+    required int count,
+    required ValueChanged<int> onCountChanged,
+    int? max,
+    Color? backgroundColor,
+    Widget? icon,
+    String? semanticLabel,
+    SwipeController? controller,
+  }) =>
+      SwipeActionCell.counter(
+        count: count,
+        onCountChanged: onCountChanged,
+        max: max,
+        backgroundColor: backgroundColor,
+        icon: icon,
+        semanticLabel: semanticLabel,
+        style: TemplateStyle.cupertino,
+        controller: controller,
+        child: child,
+      );
+
+  /// Creates a [SwipeActionCell] standard template with forced Material styling.
+  static SwipeActionCell standardMaterial({
+    required Widget child,
+    ValueChanged<bool>? onFavorited,
+    bool isFavorited = false,
+    List<SwipeAction>? actions,
+    SwipeController? controller,
+  }) =>
+      SwipeActionCell.standard(
+        onFavorited: onFavorited,
+        isFavorited: isFavorited,
+        actions: actions,
+        style: TemplateStyle.material,
+        controller: controller,
+        child: child,
+      );
+
+  /// Creates a [SwipeActionCell] standard template with forced Cupertino styling.
+  static SwipeActionCell standardCupertino({
+    required Widget child,
+    ValueChanged<bool>? onFavorited,
+    bool isFavorited = false,
+    List<SwipeAction>? actions,
+    SwipeController? controller,
+  }) =>
+      SwipeActionCell.standard(
+        onFavorited: onFavorited,
+        isFavorited: isFavorited,
+        actions: actions,
+        style: TemplateStyle.cupertino,
+        controller: controller,
+        child: child,
+      );
   @override
   State<SwipeActionCell> createState() => SwipeActionCellState();
 }
@@ -159,9 +731,27 @@ class SwipeActionCellState extends State<SwipeActionCell>
     implements SwipeCellHandle {
   late final AnimationController _controller;
   SwipeState _state = SwipeState.idle;
+
+  /// The current state of this cell's interaction state machine.
+  ///
+  /// Exposed for widget test inspection.
+  SwipeState get currentSwipeState => _state;
+
+  /// The current animation controller value (0.0 = closed, 1.0 = fully open).
+  double get currentSwipeRatio => _controller.value;
+
   SwipeDirection _lockedDirection = SwipeDirection.none;
   double _accumulatedDx = 0.0;
-
+  // F13 particle fields.
+  AnimationController? _particleController;
+  List<Particle>? _particles;
+  // F11 undo fields.
+  bool _undoPending = false;
+  double? _undoOldValue;
+  double? _undoNewValue;
+  PostActionBehavior? _lastPostActionBehavior;
+  Timer? _undoTimer;
+  AnimationController? _undoBarController;
   // F3 progressive fields.
   ValueNotifier<double>? _progressValueNotifier;
   bool _isPostIncrementSnapBack = false;
@@ -170,7 +760,6 @@ class SwipeActionCellState extends State<SwipeActionCell>
   int _lastHapticZoneIndex = -1;
   int _currentZoneIndex = -1;
   SwipeZone? _activeZoneAtRelease;
-
   // F7 controller fields.
   /// Internal controller created when [SwipeActionCell.controller] is null.
   SwipeController? _internalController;
@@ -184,22 +773,19 @@ class SwipeActionCellState extends State<SwipeActionCell>
 
   /// Cached widget width from [LayoutBuilder]; used for animateOut target.
   double _widgetWidth = 400.0;
+  Offset _burstOrigin = Offset.zero;
 
   /// True during a post-action snap-back so [onSwipeCancelled] is not fired.
   bool _isPostActionSnapBack = false;
 
   /// True after the first swipe completes when [requireConfirmation] is true.
   bool _awaitingConfirmation = false;
-
   // F007: scroll-position listener for close-on-scroll.
   FeedbackDispatcher? _feedbackDispatcher;
   ScrollPosition? _scrollPosition;
-
   // F8: accessibility fields.
   late final FocusNode _cellFocusNode;
-
   // ── F8: RTL-aware computed properties ──────────────────────────────────────
-
   /// Whether the effective direction is right-to-left.
   bool get _isRtl =>
       SwipeDirectionResolver.isRtl(context, widget.forceDirection);
@@ -234,21 +820,116 @@ class SwipeActionCellState extends State<SwipeActionCell>
 
   /// The resolved visual config after applying the theme/local/default cascade.
   late SwipeVisualConfig effectiveVisualConfig;
-
   List<SwipeZone>? _effectiveForwardZones() =>
       _resolvedForwardConfig?.zones?.isNotEmpty == true
           ? _resolvedForwardConfig!.zones
           : null;
-
   bool _hasActiveZones() =>
       (_dragIsForward ? _effectiveForwardZones() : _effectiveBackwardZones()) !=
       null;
-
   List<SwipeZone>? _effectiveBackwardZones() =>
       _resolvedBackwardConfig?.zones?.isNotEmpty == true
           ? _resolvedBackwardConfig!.zones
           : null;
+  // ── F11: Undo Logic ───────────────────────────────────────────────────────
+  void _startParticleBurst() {
+    final config = widget.paintingConfig!.particleConfig!;
+    if (config.count <= 0) return;
+    final colors = config.colors.isEmpty
+        ? const [Color(0xFFFFC107), Color(0xFFFF9800), Color(0xFFF44336)]
+        : config.colors;
+    final spreadRad = (config.spreadAngle <= 0 ? 360.0 : config.spreadAngle) *
+        (math.pi / 180.0);
+    final startAngle = -spreadRad / 2;
+    _particles = List.generate(config.count, (i) {
+      final angle = startAngle +
+          (spreadRad / config.count) * i +
+          (math.Random().nextDouble() - 0.5) * (spreadRad / config.count);
+      return Particle(
+        angle: angle,
+        maxDistance: 20.0 + math.Random().nextDouble() * 40.0,
+        color: colors[i % colors.length],
+      );
+    });
+    _particleController!
+      ..duration = config.duration
+      ..forward(from: 0.0).then((_) {
+        if (mounted) {
+          setState(() => _particles = null);
+        }
+      });
+    setState(() {});
+  }
 
+  void _startUndoWindow() {
+    final config = widget.undoConfig;
+    if (config == null) return;
+    _particleController?.stop();
+    _particles = null;
+    _undoTimer?.cancel();
+    _undoBarController?.stop();
+    _undoBarController?.value = 1.0;
+    _undoPending = true;
+    _effectiveController.reportUndoPending(true);
+    final data = UndoData(
+      oldValue: _undoOldValue,
+      newValue: _undoNewValue,
+      remainingDuration: config.duration,
+      revert: _triggerUndo,
+    );
+    config.onUndoAvailable?.call(data);
+    if (MediaQuery.of(context).disableAnimations != true) {
+      _undoBarController?.reverse();
+    }
+    _undoTimer = Timer(config.duration, _commitUndo);
+    setState(() {});
+  }
+
+  void _triggerUndo() {
+    if (!_undoPending || !mounted) return;
+    _particleController?.stop();
+    _particles = null;
+    _undoTimer?.cancel();
+    _undoBarController?.stop();
+    _undoPending = false;
+    _effectiveController.reportUndoPending(false);
+    if (_lastPostActionBehavior == PostActionBehavior.animateOut) {
+      _updateState(SwipeState.animatingToClose);
+      final simulation = SpringSimulation(
+        SpringDescription(
+          mass: SpringConfig.undoReveal.mass,
+          stiffness: SpringConfig.undoReveal.stiffness,
+          damping: SpringConfig.undoReveal.damping,
+        ),
+        _controller.value,
+        0.0,
+        0.0,
+      );
+      _controller.animateWith(simulation);
+    } else if (_undoOldValue != null) {
+      _progressValueNotifier!.value = _undoOldValue!;
+      _effectiveController.reportProgress(_undoOldValue!);
+    }
+    widget.undoConfig?.onUndoTriggered?.call();
+    setState(() {});
+  }
+
+  void _commitUndo() {
+    if (!_undoPending || !mounted) return;
+    _particleController?.stop();
+    _particles = null;
+    _undoTimer?.cancel();
+    _undoBarController?.stop();
+    _undoPending = false;
+    _effectiveController.reportUndoPending(false);
+    widget.undoConfig?.onUndoExpired?.call();
+    setState(() {});
+  }
+
+  @override
+  void executeUndo() => _triggerUndo();
+  @override
+  void executeCommitUndo() => _commitUndo();
   void _fireZoneHaptic(SwipeZoneHaptic? pattern) {
     if (pattern == null) return;
     switch (pattern) {
@@ -270,7 +951,6 @@ class SwipeActionCellState extends State<SwipeActionCell>
   /// The current accumulated progressive value, or `null` when right-swipe
   /// is disabled.
   ValueNotifier<double>? get progressValueNotifier => _progressValueNotifier;
-
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -301,7 +981,6 @@ class SwipeActionCellState extends State<SwipeActionCell>
     effectiveLeftSwipeConfig = widget.leftSwipeConfig ?? theme?.leftSwipeConfig;
     effectiveVisualConfig =
         widget.visualConfig ?? theme?.visualConfig ?? const SwipeVisualConfig();
-
     if (kDebugMode) {
       assert(
         !(widget.feedbackConfig != null &&
@@ -311,7 +990,6 @@ class SwipeActionCellState extends State<SwipeActionCell>
         'Legacy enableHaptic must be false when feedbackConfig is provided.',
       );
     }
-
     if (kDebugMode) {
       if (effectiveLeftSwipeConfig?.zones?.isNotEmpty == true) {
         assertZonesValid(effectiveLeftSwipeConfig!.zones!);
@@ -325,6 +1003,17 @@ class SwipeActionCellState extends State<SwipeActionCell>
   @override
   void initState() {
     super.initState();
+    // F11: initialize undo bar controller.
+    if (widget.paintingConfig?.particleConfig != null) {
+      _particleController = AnimationController(vsync: this);
+    }
+    if (widget.undoConfig != null) {
+      _undoBarController = AnimationController(
+        vsync: this,
+        value: 1.0,
+        duration: widget.undoConfig!.duration,
+      );
+    }
     _controller = AnimationController(
       vsync: this,
       lowerBound: double.negativeInfinity,
@@ -350,7 +1039,6 @@ class SwipeActionCellState extends State<SwipeActionCell>
   @override
   void didUpdateWidget(SwipeActionCell oldWidget) {
     _resolveEffectiveConfigs();
-
     super.didUpdateWidget(oldWidget);
     final forwardConfig = _resolvedForwardConfig;
     if (forwardConfig != null) {
@@ -360,13 +1048,39 @@ class SwipeActionCellState extends State<SwipeActionCell>
         _progressValueNotifier!.value = forwardConfig.value!;
       }
     }
-
+    // F11: handle undoConfig change independently of controller swap.
+    if (widget.undoConfig != oldWidget.undoConfig) {
+      if (widget.undoConfig == null) {
+        _undoTimer?.cancel();
+        _undoBarController?.dispose();
+        _undoBarController = null;
+      } else if (_undoBarController == null) {
+        _undoBarController = AnimationController(
+          vsync: this,
+          value: 1.0,
+          duration: widget.undoConfig!.duration,
+        );
+      } else {
+        _undoBarController!.duration = widget.undoConfig!.duration;
+      }
+    }
+    // F13: handle paintingConfig/particleConfig change independently of controller swap.
+    final oldParticleConfig = oldWidget.paintingConfig?.particleConfig;
+    final newParticleConfig = widget.paintingConfig?.particleConfig;
+    if (newParticleConfig != oldParticleConfig) {
+      if (newParticleConfig == null) {
+        _particleController?.dispose();
+        _particleController = null;
+        _particles = null;
+      } else if (_particleController == null) {
+        _particleController = AnimationController(vsync: this);
+      }
+    }
     // F7: handle controller swap.
     if (widget.controller != oldWidget.controller) {
       final oldController = oldWidget.controller ?? _internalController!;
       _registeredGroup?.unregister(oldController);
       oldController.detach(this);
-
       if (widget.controller == null && _internalController == null) {
         _internalController = SwipeController();
       } else if (widget.controller != null) {
@@ -392,11 +1106,13 @@ class SwipeActionCellState extends State<SwipeActionCell>
     _progressValueNotifier?.dispose();
     // F8: dispose focus node.
     _cellFocusNode.dispose();
+    _particleController?.dispose();
+    _undoTimer?.cancel();
+    _undoBarController?.dispose();
     super.dispose();
   }
 
   // ── SwipeCellHandle — F7 bridge methods ────────────────────────────────────
-
   @override
   void executeOpenLeft() {
     if (_resolvedBackwardConfig == null) return;
@@ -446,7 +1162,6 @@ class SwipeActionCellState extends State<SwipeActionCell>
   /// Syncs this cell's registration with the nearest [SwipeControllerProvider].
   ///
   /// Has an empty body in US1 — filled in by T013 (US4).
-
   void _initFeedbackDispatcher() {
     _feedbackDispatcher = FeedbackDispatcher.resolve(
       cellConfig: widget.feedbackConfig,
@@ -502,6 +1217,10 @@ class SwipeActionCellState extends State<SwipeActionCell>
           _handleIntentionalActionSettled();
         } else {
           _updateState(SwipeState.revealed);
+          if (widget.undoConfig != null &&
+              _resolvedBackwardConfig?.mode == LeftSwipeMode.autoTrigger) {
+            _startUndoWindow();
+          }
         }
       }
     }
@@ -528,7 +1247,6 @@ class SwipeActionCellState extends State<SwipeActionCell>
   void _applyIntentionalAction() {
     final config = _resolvedBackwardConfig!;
     _awaitingConfirmation = false;
-
     // F009: Use zone action if present
     if (_activeZoneAtRelease != null && _dragIsBackward) {
       _fireZoneHaptic(_activeZoneAtRelease!.hapticPattern ??
@@ -537,14 +1255,23 @@ class SwipeActionCellState extends State<SwipeActionCell>
       _activeZoneAtRelease = null;
       _feedbackDispatcher?.cancelPendingTimers();
     } else {
-      if (config.enableHaptic) HapticFeedback.mediumImpact();
+      if (config.enableHaptic) {
+        HapticFeedback.mediumImpact();
+      }
       config.onActionTriggered?.call();
+      // F13: trigger particle burst on intentional action
+      if (widget.paintingConfig?.particleConfig != null) {
+        _startParticleBurst();
+      }
     }
     _applyPostActionBehavior();
   }
 
   void _applyPostActionBehavior() {
     final config = _resolvedBackwardConfig!;
+    _lastPostActionBehavior = config.postActionBehavior;
+    _undoOldValue = null;
+    _undoNewValue = null;
     switch (config.postActionBehavior) {
       case PostActionBehavior.snapBack:
         _isPostActionSnapBack = true;
@@ -553,12 +1280,19 @@ class SwipeActionCellState extends State<SwipeActionCell>
       case PostActionBehavior.animateOut:
         _updateState(SwipeState.animatingOut);
         _animateOut();
+        if (widget.undoConfig != null) {
+          _startUndoWindow();
+        }
       case PostActionBehavior.stay:
         _updateState(SwipeState.revealed);
     }
   }
 
   void _animateOut() {
+    if (MediaQuery.of(context).disableAnimations) {
+      _controller.value = -(_widgetWidth * 1.5);
+      return;
+    }
     final spring = effectiveAnimationConfig.completionSpring;
     final simulation = SpringSimulation(
       SpringDescription(
@@ -585,18 +1319,16 @@ class SwipeActionCellState extends State<SwipeActionCell>
   void _applyProgressiveIncrement() {
     final config = _resolvedForwardConfig!;
     final current = _progressValueNotifier!.value;
-
+    _undoOldValue = current;
     // F009: Use zone step value if present
     final step = (_activeZoneAtRelease != null && _dragIsForward)
         ? _activeZoneAtRelease!.stepValue
         : null;
-
     final result = computeNextProgressiveValue(
       current: current,
       config: config,
       stepOverride: step,
     );
-
     if (result.nextValue != current) {
       _progressValueNotifier!.value = result.nextValue;
       config.onProgressChanged?.call(result.nextValue, current);
@@ -604,17 +1336,21 @@ class SwipeActionCellState extends State<SwipeActionCell>
     if (result.hitMax) {
       config.onMaxReached?.call();
     }
-
     if (_activeZoneAtRelease != null && _dragIsForward) {
       _fireZoneHaptic(_activeZoneAtRelease!.hapticPattern ??
           (config.enableHaptic ? SwipeZoneHaptic.medium : null));
       _activeZoneAtRelease = null;
       _feedbackDispatcher?.cancelPendingTimers();
     } else {
-      if (config.enableHaptic) HapticFeedback.mediumImpact();
+      if (config.enableHaptic) {
+        HapticFeedback.mediumImpact();
+      }
     }
-
     config.onSwipeCompleted?.call(result.nextValue);
+    _undoNewValue = result.nextValue;
+    if (widget.undoConfig != null) {
+      _startUndoWindow();
+    }
     // F8: announce progress after increment.
     _announceProgress(result.nextValue, config.maxValue);
   }
@@ -648,6 +1384,9 @@ class SwipeActionCellState extends State<SwipeActionCell>
   }
 
   void _handleDragStart(DragStartDetails details) {
+    if (_undoPending) {
+      _commitUndo();
+    }
     if (_state == SwipeState.animatingOut) return;
     _controller.stop();
     _accumulatedDx = 0.0;
@@ -702,13 +1441,11 @@ class SwipeActionCellState extends State<SwipeActionCell>
         : _leftMaxTranslation(widgetWidth);
     if (maxT <= 0) return;
     final rawNewOffset = _controller.value + dx;
-
     // F003: Clamping logic for progressive-style reveal.
     final resistance = (_lockedDirection == SwipeDirection.left &&
             _resolvedBackwardConfig?.mode == LeftSwipeMode.reveal)
         ? 0.0
         : effectiveAnimationConfig.resistanceFactor;
-
     _controller.value = _applyResistance(rawNewOffset, maxT, resistance);
   }
 
@@ -718,6 +1455,11 @@ class SwipeActionCellState extends State<SwipeActionCell>
       _updateState(SwipeState.idle);
       return;
     }
+    if (!effectiveGestureConfig.enabledDirections.contains(_lockedDirection)) {
+      _updateState(SwipeState.idle);
+      return;
+    }
+
     final maxT = _lockedDirection == SwipeDirection.right
         ? (effectiveAnimationConfig.maxTranslationRight ?? widgetWidth * 0.6)
         : _leftMaxTranslation(widgetWidth);
@@ -733,7 +1475,6 @@ class SwipeActionCellState extends State<SwipeActionCell>
       return;
     }
     final ratio = _controller.value.abs() / maxT;
-
     final forwardZones = _effectiveForwardZones();
     final backwardZones = _effectiveBackwardZones();
     final activeForwardZone = (forwardZones != null && _dragIsForward)
@@ -743,13 +1484,11 @@ class SwipeActionCellState extends State<SwipeActionCell>
         ? resolveActiveZone(backwardZones, ratio)
         : null;
     _activeZoneAtRelease = activeForwardZone ?? activeBackwardZone;
-
     final isFling =
         velocity.abs() >= effectiveGestureConfig.velocityThreshold &&
             (_lockedDirection == SwipeDirection.right
                 ? velocity > 0
                 : velocity < 0);
-
     final bool shouldComplete;
     if (_activeZoneAtRelease != null) {
       shouldComplete = true;
@@ -821,6 +1560,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
     // F8: reduced motion — instant snap.
     if (MediaQuery.of(context).disableAnimations) {
       _controller.value = 0.0;
+      _handleAnimationStatusChange(AnimationStatus.completed);
       return;
     }
     final spring = effectiveAnimationConfig.snapBackSpring;
@@ -840,6 +1580,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
     // F8: reduced motion — instant jump.
     if (MediaQuery.of(context).disableAnimations) {
       _controller.value = toOffset;
+      _handleAnimationStatusChange(AnimationStatus.completed);
       return;
     }
     final spring = effectiveAnimationConfig.completionSpring;
@@ -853,6 +1594,38 @@ class SwipeActionCellState extends State<SwipeActionCell>
       velocity,
     );
     _controller.animateWith(simulation);
+  }
+
+  CustomPainter _safePainterCall(
+      SwipePainterCallback callback, SwipeProgress progress, SwipeState state) {
+    if (kDebugMode) {
+      return callback(progress, state);
+    }
+    try {
+      return callback(progress, state);
+    } catch (e, st) {
+      FlutterError.reportError(FlutterErrorDetails(exception: e, stack: st));
+      return _NoOpPainter();
+    }
+  }
+
+  Widget _buildDecoratedChild(Widget child, SwipeProgress progress) {
+    final config = widget.paintingConfig;
+    if (config?.restingDecoration == null &&
+        config?.activatedDecoration == null) {
+      return child;
+    }
+    final t = progress.ratio.clamp(0.0, 1.0);
+    final decoration = (config!.activatedDecoration != null)
+        ? (Decoration.lerp(
+                config.restingDecoration, config.activatedDecoration, t) ??
+            config.restingDecoration)
+        : config.restingDecoration;
+    if (decoration == null) return child;
+    return DecoratedBox(
+      decoration: decoration,
+      child: child,
+    );
   }
 
   Widget _maybeWrapWithBodyTapInterceptor(Widget child) {
@@ -881,7 +1654,6 @@ class SwipeActionCellState extends State<SwipeActionCell>
     // backward drag shows leftBackground, regardless of physical direction.
     final isForward =
         progress.direction == SwipeDirectionResolver.forwardPhysical(_isRtl);
-
     // F009: Route to ZoneAwareBackground if zones are configured.
     final zones =
         isForward ? _effectiveForwardZones() : _effectiveBackwardZones();
@@ -895,11 +1667,12 @@ class SwipeActionCellState extends State<SwipeActionCell>
         transitionStyle: transitionStyle ?? ZoneTransitionStyle.instant,
       );
     }
-
     final builder = isForward
         ? effectiveVisualConfig.rightBackground
         : effectiveVisualConfig.leftBackground;
-    if (builder == null) return const SizedBox.shrink();
+    if (builder == null) {
+      return const SizedBox.shrink();
+    }
     return builder(context, progress);
   }
 
@@ -918,7 +1691,9 @@ class SwipeActionCellState extends State<SwipeActionCell>
             final fillRatio = config.maxValue.isFinite
                 ? (value / config.maxValue).clamp(0.0, 1.0)
                 : 0.0;
-            if (indicatorConfig == null) return const SizedBox.shrink();
+            if (indicatorConfig == null) {
+              return const SizedBox.shrink();
+            }
             return ProgressiveSwipeIndicator(
                 fillRatio: fillRatio, config: indicatorConfig);
           },
@@ -933,7 +1708,6 @@ class SwipeActionCellState extends State<SwipeActionCell>
         config.actionPanelWidth ?? 80.0 * config.actions.length.clamp(1, 3);
     final actions = config.actions.take(3).toList();
     final currentWidth = _controller.value.abs().clamp(0.0, panelWidth);
-
     return Positioned(
       top: 0,
       bottom: 0,
@@ -970,7 +1744,6 @@ class SwipeActionCellState extends State<SwipeActionCell>
   }
 
   // ── F8: Accessibility helpers ──────────────────────────────────────────────
-
   /// Default label for the forward (progressive) action.
   String _defaultForwardLabel(bool isRtl) =>
       isRtl ? 'Swipe left to progress' : 'Swipe right to progress';
@@ -1066,15 +1839,18 @@ class SwipeActionCellState extends State<SwipeActionCell>
         isRtl ? LogicalKeyboardKey.arrowLeft : LogicalKeyboardKey.arrowRight;
     final backwardKey =
         isRtl ? LogicalKeyboardKey.arrowRight : LogicalKeyboardKey.arrowLeft;
-
     if (event.logicalKey == forwardKey) {
       if (_isAnimating) return KeyEventResult.handled;
-      if (_resolvedForwardConfig != null) _triggerForwardFromSemantics();
+      if (_resolvedForwardConfig != null) {
+        _triggerForwardFromSemantics();
+      }
       return KeyEventResult.handled;
     }
     if (event.logicalKey == backwardKey) {
       if (_isAnimating) return KeyEventResult.handled;
-      if (_resolvedBackwardConfig != null) _triggerBackwardFromSemantics();
+      if (_resolvedBackwardConfig != null) {
+        _triggerBackwardFromSemantics();
+      }
       return KeyEventResult.handled;
     }
     if (event.logicalKey == LogicalKeyboardKey.escape) {
@@ -1091,11 +1867,9 @@ class SwipeActionCellState extends State<SwipeActionCell>
   @override
   Widget build(BuildContext context) {
     if (!widget.enabled) return widget.child;
-
     // F8: resolve semantic actions for screen reader.
     final semanticActions = _buildSemanticActions(context);
     final cellLabel = widget.semanticConfig?.cellLabel?.resolve(context);
-
     return Focus(
       focusNode: _cellFocusNode,
       onKeyEvent: _handleKeyEvent,
@@ -1107,6 +1881,8 @@ class SwipeActionCellState extends State<SwipeActionCell>
           builder: (context, constraints) {
             final width = constraints.maxWidth;
             _widgetWidth = width;
+            final height = constraints.maxHeight;
+            _burstOrigin = Offset(width / 2, height / 2);
             return RawGestureDetector(
               behavior: HitTestBehavior.translucent,
               gestures: _buildGestureRecognizers(width),
@@ -1136,7 +1912,6 @@ class SwipeActionCellState extends State<SwipeActionCell>
                       if (zones != null && zones.isNotEmpty) {
                         final newZoneIndex =
                             resolveActiveZoneIndex(zones, ratio);
-
                         // Haptic: Forward-only crossing
                         if (newZoneIndex > _lastHapticZoneIndex &&
                             newZoneIndex >= 0) {
@@ -1149,7 +1924,6 @@ class SwipeActionCellState extends State<SwipeActionCell>
                           );
                         }
                         _lastHapticZoneIndex = newZoneIndex;
-
                         // Semantics: Any change in active zone
                         if (newZoneIndex != _currentZoneIndex) {
                           _currentZoneIndex = newZoneIndex;
@@ -1163,7 +1937,6 @@ class SwipeActionCellState extends State<SwipeActionCell>
                         }
                       }
                     }
-
                     if (progress.isActivated &&
                         !_hapticThresholdFired &&
                         !_hasActiveZones()) {
@@ -1174,6 +1947,34 @@ class SwipeActionCellState extends State<SwipeActionCell>
                       _hapticThresholdFired = true;
                     }
                     widget.onProgressChanged?.call(progress);
+                    final undoOverlay = (widget.undoConfig != null &&
+                            widget.undoConfig!.showBuiltInOverlay &&
+                            _undoPending &&
+                            _undoBarController != null)
+                        ? Positioned(
+                            left: 0,
+                            right: 0,
+                            top: widget.undoConfig!.overlayConfig?.position ==
+                                    SwipeUndoOverlayPosition.top
+                                ? 0
+                                : null,
+                            bottom:
+                                (widget.undoConfig!.overlayConfig?.position ??
+                                            SwipeUndoOverlayPosition.bottom) ==
+                                        SwipeUndoOverlayPosition.bottom
+                                    ? 0
+                                    : null,
+                            child: SwipeUndoOverlay(
+                              config: widget.undoConfig!.overlayConfig ??
+                                  const SwipeUndoOverlayConfig(),
+                              progressAnimation: _undoBarController!,
+                              onUndo: _triggerUndo,
+                              semanticUndoLabel: widget.undoConfig!
+                                      .overlayConfig?.undoButtonLabel ??
+                                  'Undo',
+                            ),
+                          )
+                        : null;
                     final translatedChild = Transform.translate(
                       offset: Offset(offset, 0),
                       child: _maybeWrapWithBodyTapInterceptor(child!),
@@ -1186,6 +1987,19 @@ class SwipeActionCellState extends State<SwipeActionCell>
                         : null;
                     return Stack(
                       children: [
+                        if (widget.paintingConfig?.backgroundPainter != null)
+                          Positioned.fill(
+                            child: IgnorePointer(
+                              child: RepaintBoundary(
+                                child: CustomPaint(
+                                  painter: _safePainterCall(
+                                      widget.paintingConfig!.backgroundPainter!,
+                                      progress,
+                                      _state),
+                                ),
+                              ),
+                            ),
+                          ),
                         if (effectiveVisualConfig.leftBackground != null ||
                             effectiveVisualConfig.rightBackground != null)
                           Positioned.fill(
@@ -1200,7 +2014,36 @@ class SwipeActionCellState extends State<SwipeActionCell>
                                     _dragIsBackward)))
                           _buildRevealPanel(width),
                         if (confirmOverlay != null) confirmOverlay,
-                        translatedChild,
+                        _buildDecoratedChild(translatedChild, progress),
+                        if (undoOverlay != null) undoOverlay,
+                        if (_particles != null && _particleController != null)
+                          Positioned.fill(
+                            child: IgnorePointer(
+                              child: AnimatedBuilder(
+                                animation: _particleController!,
+                                builder: (context, _) => CustomPaint(
+                                  painter: SwipeParticlePainter(
+                                    particles: _particles!,
+                                    animationValue: _particleController!.value,
+                                    origin: _burstOrigin,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        if (widget.paintingConfig?.foregroundPainter != null)
+                          Positioned.fill(
+                            child: IgnorePointer(
+                              child: RepaintBoundary(
+                                child: CustomPaint(
+                                  painter: _safePainterCall(
+                                      widget.paintingConfig!.foregroundPainter!,
+                                      progress,
+                                      _state),
+                                ),
+                              ),
+                            ),
+                          ),
                         if (_resolvedForwardConfig != null &&
                             _resolvedForwardConfig!.showProgressIndicator)
                           _buildProgressIndicator(),
@@ -1216,4 +2059,11 @@ class SwipeActionCellState extends State<SwipeActionCell>
       ),
     );
   }
+}
+
+class _NoOpPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {}
+  @override
+  bool shouldRepaint(_NoOpPainter old) => false;
 }

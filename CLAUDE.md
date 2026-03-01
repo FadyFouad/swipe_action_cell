@@ -126,6 +126,15 @@ Phase 4 (Polish):   F14 → F15 → F16 → F17
 - Dart ≥ 3.4.0 / Flutter ≥ 3.22.0 + Flutter SDK only (zero external runtime deps — Constitution IV) (006-controller-group)
 - N/A (in-memory state only; no persistence) (006-controller-group)
 - Dart >=3.4.0 <4.0.0 + Flutter >=3.22.0 + Flutter SDK only (zero external runtime deps — Constitution IV) (010-unified-feedback)
+- N/A (in-memory undo state only; persistence is consumer responsibility) (011-swipe-undo)
+- Dart ≥ 3.4.0 < 4.0.0 + Flutter SDK only — `dart:math` for particle angle computation (stdlib, no external package) (012-custom-painter)
+- N/A (no persistence) (012-custom-painter)
+- Dart ≥ 3.4.0 < 4.0.0 + Flutter SDK only — `material` and `cupertino` icon libraries (SDK-bundled, Constitution IV) (013-prebuilt-templates)
+- N/A (no persistence — templates are stateless config builders) (013-prebuilt-templates)
+- Dart ≥ 3.4.0 < 4.0.0 + `flutter_test` (Flutter SDK — moved from dev_dependencies to dependencies to enable `lib/` imports) (014-testing-utils)
+- N/A (stateless utility code) (014-testing-utils)
+- Dart ≥ 3.4.0 < 4.0.0 / Flutter ≥ 3.22.0 + Flutter SDK only (package); `swipe_action_cell: path: ../` (example app) (015-pubdev-release)
+- N/A — documentation and Dart source files only (015-pubdev-release)
 
 ## Recent Changes
 - 001-gesture-animation: Added Dart >=3.4.0 + Flutter SDK only (zero external runtime deps — Constitution IV)

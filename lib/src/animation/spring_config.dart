@@ -25,6 +25,13 @@ class SpringConfig {
     damping: 25.0,
   );
 
+  /// A preset for undo reveal animations: slight bounce, distinct from snapBack.
+  static const SpringConfig undoReveal = SpringConfig(
+    mass: 1.0,
+    stiffness: 300.0,
+    damping: 18.0,
+  );
+
   /// A preset for completion animations: snappy and decisive.
   static const SpringConfig completion = SpringConfig(
     stiffness: 600.0,

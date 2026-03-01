@@ -26,6 +26,10 @@ class _FakeHandle implements SwipeCellHandle {
   void executeResetProgress() => resetProgressCalls++;
   @override
   void executeSetProgress(double value) => setProgressValues.add(value);
+  @override
+  void executeUndo() {}
+  @override
+  void executeCommitUndo() {}
 }
 
 void main() {

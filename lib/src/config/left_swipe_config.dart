@@ -10,6 +10,34 @@ import '../core/swipe_zone.dart';
 /// Pass as [SwipeActionCell.leftSwipeConfig] to enable left-swipe intentional
 /// semantics. When `null`, left-swipe intentional behavior is disabled entirely.
 ///
+/// **Auto-trigger mode** fires [onActionTriggered] after the user crosses the
+/// activation threshold and releases:
+///
+/// ```dart
+/// leftSwipeConfig: const LeftSwipeConfig(
+///   mode: LeftSwipeMode.autoTrigger,
+///   postActionBehavior: PostActionBehavior.animateOut,
+///   enableHaptic: true,
+/// )
+/// ```
+///
+/// **Reveal mode** slides open an action panel with tappable buttons:
+///
+/// ```dart
+/// leftSwipeConfig: LeftSwipeConfig(
+///   mode: LeftSwipeMode.reveal,
+///   actions: [
+///     SwipeAction(
+///       icon: const Icon(Icons.archive),
+///       label: 'Archive',
+///       backgroundColor: const Color(0xFF00897B),
+///       foregroundColor: Colors.white,
+///       onTap: () => archive(item),
+///     ),
+///   ],
+/// )
+/// ```
+///
 /// Renamed from `IntentionalSwipeConfig` in F005. A new debug assertion has been
 /// added for reveal mode with an empty [actions] list.
 @immutable

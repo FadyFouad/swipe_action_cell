@@ -51,6 +51,7 @@ class SwipeController extends ChangeNotifier {
   SwipeState _currentState = SwipeState.idle;
   double _currentProgress = 0.0;
   SwipeDirection? _openDirection;
+  bool _isUndoPending = false;
   bool _disposed = false;
 
   // ── Observable properties ──────────────────────────────────────────────────
@@ -81,6 +82,9 @@ class SwipeController extends ChangeNotifier {
   /// [SwipeDirection.right] is not applicable (right swipe never stays open),
   /// and `null` when the cell is closed.
   SwipeDirection? get openDirection => _openDirection;
+
+  /// Whether an undo window is currently open for the attached cell.
+  bool get isUndoPending => _isUndoPending;
 
   // ── Commands ───────────────────────────────────────────────────────────────
 
@@ -163,6 +167,24 @@ class SwipeController extends ChangeNotifier {
     _handle!.executeResetProgress();
   }
 
+  /// Triggers undo on the attached cell.
+  ///
+  /// Returns `true` if undo was successfully triggered, `false` if no undo is
+  /// pending or no cell is attached.
+  bool undo() {
+    if (_disposed || !_isUndoPending || _handle == null) return false;
+    _handle!.executeUndo();
+    return true;
+  }
+
+  /// Force-commits the pending undo immediately (as if the undo window expired).
+  ///
+  /// No-op when no undo is pending or no cell is attached.
+  void commitPendingUndo() {
+    if (_disposed || !_isUndoPending || _handle == null) return;
+    _handle!.executeCommitUndo();
+  }
+
   /// Sets the progressive value of the attached cell to [value], clamped
   /// to [[RightSwipeConfig.minValue]..[RightSwipeConfig.maxValue]].
   ///
@@ -235,6 +257,15 @@ class SwipeController extends ChangeNotifier {
   /// unchanged.
   ///
   /// Not for consumer use.
+
+  /// Reports the undo-pending state change to the controller.
+  void reportUndoPending(bool isPending) {
+    if (_disposed || isPending == _isUndoPending) return;
+    _isUndoPending = isPending;
+    notifyListeners();
+  }
+
+  /// Called by [SwipeActionCellState] to update the cached progress value.
   void reportProgress(double progress) {
     if (_disposed) return;
     if (progress == _currentProgress) return;

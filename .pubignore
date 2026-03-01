@@ -1,0 +1,15 @@
+# Development and specification files — not published to pub.dev
+specs/
+CLAUDE.md
+
+# Example build artifacts
+example/build/
+
+# IDE files
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# macOS
+.DS_Store
