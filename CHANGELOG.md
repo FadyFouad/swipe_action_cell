@@ -3,6 +3,28 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.1.0] - 2026-03-02
+
+### Added
+- Full Swipe Auto-Trigger: swipe a cell fully across the screen to instantly trigger a designated action without tapping
+- FullSwipeConfig class for per-direction full-swipe configuration
+- Expand-to-fill animation when crossing full-swipe threshold
+- SwipeController.triggerFullSwipe() for programmatic full-swipe triggering
+- SwipeTester.fullSwipeRight() and fullSwipeLeft() testing helpers
+- Keyboard shortcut: Shift+Arrow for full-swipe action (accessibility)
+- Screen reader announcement when approaching full-swipe threshold
+- Full swipe support in delete, archive, and standard templates by default
+
+### Changed
+- RightSwipeConfig and LeftSwipeConfig now accept optional fullSwipeConfig parameter
+- SwipeFeedbackEvent enum extended with fullSwipeThreshold and fullSwipeActivation
+- SwipeProgress now includes fullSwipeRatio data
+
+### Notes
+- Full swipe is disabled by default — zero overhead when not configured
+- Full-swipe action must also exist in the reveal actions list (accessibility requirement)
+- Full-swipe threshold must be greater than activation threshold and all zone thresholds
+
 ## [1.0.0] - 2026-03-01
 
 ### Added
