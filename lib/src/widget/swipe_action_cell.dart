@@ -1615,14 +1615,12 @@ class SwipeActionCellState extends State<SwipeActionCell>
   }
 
   Widget _maybeWrapWithBodyTapInterceptor(Widget child) {
-    if (_state != SwipeState.revealed || _resolvedBackwardConfig == null) {
-      return child;
-    }
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: _handleBodyTapInRevealedState,
-      child: child,
-    );
+    // Body-tap interception for the reveal mode is handled by the Positioned
+    // widget added to the Stack below the decoratedChild in the build method.
+    // Wrapping the child here is insufficient because the child widget is
+    // translated off-screen when the panel is open, leaving no on-screen hit
+    // area. The Positioned approach covers the full visible cell body instead.
+    return child;
   }
 
   void _handleBodyTapInRevealedState() {
@@ -2001,6 +1999,24 @@ class SwipeActionCellState extends State<SwipeActionCell>
                           _buildRevealPanel(width),
                         if (confirmOverlay != null) confirmOverlay,
                         _buildDecoratedChild(translatedChild, progress),
+                        // Reveal-mode body-tap interceptor: covers the visible
+                        // cell area (excluding the exposed panel) so that
+                        // tapping anywhere on the cell body closes the panel.
+                        // Positioned avoids the infinite-height crash that
+                        // SizedBox.expand causes inside ListView.
+                        if (_state == SwipeState.revealed &&
+                            _resolvedBackwardConfig?.mode ==
+                                LeftSwipeMode.reveal)
+                          Positioned(
+                            top: 0,
+                            bottom: 0,
+                            left: offset > 0 ? offset : 0.0,
+                            right: offset < 0 ? -offset : 0.0,
+                            child: GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: _handleBodyTapInRevealedState,
+                            ),
+                          ),
                         if (undoOverlay != null) undoOverlay,
                         if (_particles != null && _particleController != null)
                           Positioned.fill(
