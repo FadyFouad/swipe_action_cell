@@ -16,5 +16,19 @@ void main() {
       ));
       expect(find.text('Counter item'), findsOneWidget);
     });
+
+    testWidgets('does NOT have fullSwipeConfig', (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+          body: SwipeActionCell.counter(
+            child: const ListTile(title: Text('Counter item')),
+            count: 3,
+            onCountChanged: (_) {},
+          ),
+        ),
+      ));
+      final cell = tester.widget<SwipeActionCell>(find.byType(SwipeActionCell));
+      expect(cell.rightSwipeConfig?.fullSwipeConfig, isNull);
+    });
   });
 }

@@ -205,9 +205,26 @@ class SwipeActionCell extends StatefulWidget {
   final void Function(SwipeDirection direction, SwipeAction action)?
       onFullSwipeTriggered;
 
+  /// Internal sentinel for template factories to distinguish between
+  /// "not provided" (use default) and "null" (explicitly disable).
+  static const _defaultFullSwipe = FullSwipeConfig(
+    action: SwipeAction(
+      icon: SizedBox(),
+      backgroundColor: Color(0),
+      foregroundColor: Color(0),
+      onTap: _noOp,
+    ),
+  );
+
+  static void _noOp() {}
+
   @override
+  State<SwipeActionCell> createState() => SwipeActionCellState();
 
   /// Creates a [SwipeActionCell] configured for a delete action.
+  ///
+  /// Includes a full-swipe shortcut to delete by default (threshold: 0.75).
+  /// To disable, pass [fullSwipeConfig]: null.
   factory SwipeActionCell.delete({
     required Widget child,
     required VoidCallback onDeleted,
@@ -216,28 +233,44 @@ class SwipeActionCell extends StatefulWidget {
     String? semanticLabel,
     TemplateStyle style = TemplateStyle.auto,
     SwipeController? controller,
+    FullSwipeConfig? fullSwipeConfig = _defaultFullSwipe,
   }) {
     final resolved = resolveStyle(style);
     final assets = deleteAssets(resolved, icon, backgroundColor);
+
+    final isDefault = identical(fullSwipeConfig, _defaultFullSwipe);
+    final effectiveFullSwipe = isDefault
+        ? FullSwipeConfig(
+            enabled: true,
+            threshold: 0.75,
+            action: SwipeAction(
+              icon: icon ?? assets.primaryIcon,
+              label: semanticLabel ?? 'Delete item',
+              onTap: onDeleted,
+              backgroundColor: backgroundColor ?? assets.backgroundColor,
+              foregroundColor: Colors.white,
+            ),
+          )
+        : fullSwipeConfig;
+
+    final action = SwipeAction(
+      icon: icon ?? assets.primaryIcon,
+      label: semanticLabel ?? 'Delete item',
+      onTap: onDeleted,
+      backgroundColor: backgroundColor ?? assets.backgroundColor,
+      foregroundColor: Colors.white,
+    );
+
     return SwipeActionCell(
       controller: controller,
       leftSwipeConfig: LeftSwipeConfig(
-        mode: LeftSwipeMode.autoTrigger,
+        mode: fullSwipeConfig == null ? LeftSwipeMode.reveal : LeftSwipeMode.autoTrigger,
+        actions: fullSwipeConfig == null ? [action] : const [],
         postActionBehavior: PostActionBehavior.animateOut,
         enableHaptic: true,
-        fullSwipeConfig: FullSwipeConfig(
-          enabled: true,
-          threshold: 0.75,
-          action: SwipeAction(
-            icon: icon ?? assets.primaryIcon,
-            label: semanticLabel ?? 'Delete item',
-            onTap: onDeleted,
-            backgroundColor: backgroundColor ?? assets.backgroundColor,
-            foregroundColor: Colors.white,
-          ),
-        ),
+        fullSwipeConfig: effectiveFullSwipe,
       ),
-      undoConfig: SwipeUndoConfig(
+      undoConfig: fullSwipeConfig == null ? null : SwipeUndoConfig(
         onUndoExpired: onDeleted,
       ),
       visualConfig: buildVisualConfig(
@@ -261,6 +294,9 @@ class SwipeActionCell extends StatefulWidget {
   }
 
   /// Creates a [SwipeActionCell] configured for an archive action.
+  ///
+  /// Includes a full-swipe shortcut to archive by default (threshold: 0.75).
+  /// To disable, pass [fullSwipeConfig]: null.
   factory SwipeActionCell.archive({
     required Widget child,
     required VoidCallback onArchived,
@@ -269,27 +305,43 @@ class SwipeActionCell extends StatefulWidget {
     String? semanticLabel,
     TemplateStyle style = TemplateStyle.auto,
     SwipeController? controller,
+    FullSwipeConfig? fullSwipeConfig = _defaultFullSwipe,
   }) {
     final resolved = resolveStyle(style);
     final assets = archiveAssets(resolved, icon, backgroundColor);
+
+    final isDefault = identical(fullSwipeConfig, _defaultFullSwipe);
+    final effectiveFullSwipe = isDefault
+        ? FullSwipeConfig(
+            enabled: true,
+            threshold: 0.75,
+            action: SwipeAction(
+              icon: icon ?? assets.primaryIcon,
+              label: semanticLabel ?? 'Archive item',
+              onTap: onArchived,
+              backgroundColor: backgroundColor ?? assets.backgroundColor,
+              foregroundColor: Colors.white,
+            ),
+          )
+        : fullSwipeConfig;
+
+    final action = SwipeAction(
+      icon: icon ?? assets.primaryIcon,
+      label: semanticLabel ?? 'Archive item',
+      onTap: onArchived,
+      backgroundColor: backgroundColor ?? assets.backgroundColor,
+      foregroundColor: Colors.white,
+    );
+
     return SwipeActionCell(
       controller: controller,
       leftSwipeConfig: LeftSwipeConfig(
-        mode: LeftSwipeMode.autoTrigger,
+        mode: fullSwipeConfig == null ? LeftSwipeMode.reveal : LeftSwipeMode.autoTrigger,
+        actions: fullSwipeConfig == null ? [action] : const [],
         postActionBehavior: PostActionBehavior.animateOut,
-        onActionTriggered: onArchived,
+        onActionTriggered: fullSwipeConfig == null ? null : onArchived,
         enableHaptic: true,
-        fullSwipeConfig: FullSwipeConfig(
-          enabled: true,
-          threshold: 0.75,
-          action: SwipeAction(
-            icon: icon ?? assets.primaryIcon,
-            label: semanticLabel ?? 'Archive item',
-            onTap: onArchived,
-            backgroundColor: backgroundColor ?? assets.backgroundColor,
-            foregroundColor: Colors.white,
-          ),
-        ),
+        fullSwipeConfig: effectiveFullSwipe,
       ),
       visualConfig: buildVisualConfig(
         resolvedStyle: resolved,
@@ -456,6 +508,9 @@ class SwipeActionCell extends StatefulWidget {
 
   /// Creates a [SwipeActionCell] configured with a standard reveal action panel
   /// and a favorite toggle shortcut.
+  ///
+  /// Includes a full-swipe shortcut for the first action in [actions] by
+  /// default (threshold: 0.75). To disable, pass [fullSwipeConfig]: null.
   factory SwipeActionCell.standard({
     required Widget child,
     ValueChanged<bool>? onFavorited,
@@ -463,11 +518,21 @@ class SwipeActionCell extends StatefulWidget {
     List<SwipeAction>? actions,
     TemplateStyle style = TemplateStyle.auto,
     SwipeController? controller,
+    FullSwipeConfig? fullSwipeConfig = _defaultFullSwipe,
   }) {
     final resolved = resolveStyle(style);
     final favAssets = favoriteAssets(resolved, null, null, null);
     final hasRight = onFavorited != null;
     final hasLeft = actions != null && actions.isNotEmpty;
+
+    final effectiveFullSwipe = (hasLeft && identical(fullSwipeConfig, _defaultFullSwipe))
+        ? FullSwipeConfig(
+            enabled: true,
+            threshold: 0.75,
+            action: actions!.first,
+          )
+        : fullSwipeConfig;
+
     return SwipeActionCell(
       controller: controller,
       rightSwipeConfig: hasRight
@@ -481,6 +546,7 @@ class SwipeActionCell extends StatefulWidget {
               mode: LeftSwipeMode.reveal,
               actions: actions,
               enableHaptic: true,
+              fullSwipeConfig: effectiveFullSwipe,
             )
           : null,
       visualConfig: buildVisualConfig(
@@ -510,6 +576,7 @@ class SwipeActionCell extends StatefulWidget {
     Widget? icon,
     String? semanticLabel,
     SwipeController? controller,
+    FullSwipeConfig? fullSwipeConfig = _defaultFullSwipe,
   }) =>
       SwipeActionCell.delete(
         onDeleted: onDeleted,
@@ -518,6 +585,7 @@ class SwipeActionCell extends StatefulWidget {
         semanticLabel: semanticLabel,
         style: TemplateStyle.material,
         controller: controller,
+        fullSwipeConfig: fullSwipeConfig,
         child: child,
       );
 
@@ -529,6 +597,7 @@ class SwipeActionCell extends StatefulWidget {
     Widget? icon,
     String? semanticLabel,
     SwipeController? controller,
+    FullSwipeConfig? fullSwipeConfig = _defaultFullSwipe,
   }) =>
       SwipeActionCell.delete(
         onDeleted: onDeleted,
@@ -537,6 +606,7 @@ class SwipeActionCell extends StatefulWidget {
         semanticLabel: semanticLabel,
         style: TemplateStyle.cupertino,
         controller: controller,
+        fullSwipeConfig: fullSwipeConfig,
         child: child,
       );
 
@@ -548,6 +618,7 @@ class SwipeActionCell extends StatefulWidget {
     Widget? icon,
     String? semanticLabel,
     SwipeController? controller,
+    FullSwipeConfig? fullSwipeConfig = _defaultFullSwipe,
   }) =>
       SwipeActionCell.archive(
         onArchived: onArchived,
@@ -556,6 +627,7 @@ class SwipeActionCell extends StatefulWidget {
         semanticLabel: semanticLabel,
         style: TemplateStyle.material,
         controller: controller,
+        fullSwipeConfig: fullSwipeConfig,
         child: child,
       );
 
@@ -567,6 +639,7 @@ class SwipeActionCell extends StatefulWidget {
     Widget? icon,
     String? semanticLabel,
     SwipeController? controller,
+    FullSwipeConfig? fullSwipeConfig = _defaultFullSwipe,
   }) =>
       SwipeActionCell.archive(
         onArchived: onArchived,
@@ -575,6 +648,7 @@ class SwipeActionCell extends StatefulWidget {
         semanticLabel: semanticLabel,
         style: TemplateStyle.cupertino,
         controller: controller,
+        fullSwipeConfig: fullSwipeConfig,
         child: child,
       );
 
@@ -723,6 +797,7 @@ class SwipeActionCell extends StatefulWidget {
     bool isFavorited = false,
     List<SwipeAction>? actions,
     SwipeController? controller,
+    FullSwipeConfig? fullSwipeConfig = _defaultFullSwipe,
   }) =>
       SwipeActionCell.standard(
         onFavorited: onFavorited,
@@ -730,6 +805,7 @@ class SwipeActionCell extends StatefulWidget {
         actions: actions,
         style: TemplateStyle.material,
         controller: controller,
+        fullSwipeConfig: fullSwipeConfig,
         child: child,
       );
 
@@ -740,6 +816,7 @@ class SwipeActionCell extends StatefulWidget {
     bool isFavorited = false,
     List<SwipeAction>? actions,
     SwipeController? controller,
+    FullSwipeConfig? fullSwipeConfig = _defaultFullSwipe,
   }) =>
       SwipeActionCell.standard(
         onFavorited: onFavorited,
@@ -747,11 +824,9 @@ class SwipeActionCell extends StatefulWidget {
         actions: actions,
         style: TemplateStyle.cupertino,
         controller: controller,
+        fullSwipeConfig: fullSwipeConfig,
         child: child,
       );
-
-  @override
-  State<SwipeActionCell> createState() => SwipeActionCellState();
 }
 
 /// Mutable state for [SwipeActionCell].
