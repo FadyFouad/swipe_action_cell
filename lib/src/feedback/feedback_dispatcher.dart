@@ -43,7 +43,7 @@ class FeedbackDispatcher {
       return;
     }
 
-    if (!_config.enableHaptic) return;
+    if (!_config.enableHaptic) { return; }
 
     final effectivePattern =
         pattern ?? _config.hapticOverrides?[event] ?? _defaultPatternFor(event);
@@ -161,6 +161,12 @@ class FeedbackDispatcher {
       SwipeFeedbackEvent.panelClosed => HapticPattern.tick,
       SwipeFeedbackEvent.zoneBoundaryCrossed => HapticPattern.light,
       SwipeFeedbackEvent.swipeCancelled => HapticPattern.silent,
+      SwipeFeedbackEvent.fullSwipeThresholdCrossed =>
+          _config!.hapticOverrides?[SwipeFeedbackEvent.fullSwipeThresholdCrossed] ??
+          HapticPattern.fullSwipeThreshold,
+      SwipeFeedbackEvent.fullSwipeActivation =>
+          _config!.hapticOverrides?[SwipeFeedbackEvent.fullSwipeActivation] ??
+          HapticPattern.fullSwipeActivation,
     };
   }
 
@@ -174,6 +180,8 @@ class FeedbackDispatcher {
       SwipeFeedbackEvent.panelClosed => SwipeSoundEvent.panelClosed,
       SwipeFeedbackEvent.zoneBoundaryCrossed => null,
       SwipeFeedbackEvent.swipeCancelled => null,
+      SwipeFeedbackEvent.fullSwipeThresholdCrossed => null,
+      SwipeFeedbackEvent.fullSwipeActivation => null
     };
   }
 }

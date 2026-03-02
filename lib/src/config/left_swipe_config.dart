@@ -1,3 +1,4 @@
+import '../actions/full_swipe/full_swipe_config.dart';
 import 'package:flutter/foundation.dart';
 
 import '../actions/intentional/left_swipe_mode.dart';
@@ -56,6 +57,7 @@ class LeftSwipeConfig {
     this.onPanelClosed,
     this.zones,
     this.zoneTransitionStyle = ZoneTransitionStyle.instant,
+    this.fullSwipeConfig,
   })  : assert(
           actionPanelWidth == null || actionPanelWidth > 0,
           'actionPanelWidth must be > 0 when provided, got $actionPanelWidth',
@@ -78,6 +80,9 @@ class LeftSwipeConfig {
 
   /// Visual transition between zone backgrounds.
   final ZoneTransitionStyle zoneTransitionStyle;
+
+  /// Optional configuration for full-swipe auto-trigger.
+  final FullSwipeConfig? fullSwipeConfig;
 
   /// The action buttons displayed in the panel. Used only in [LeftSwipeMode.reveal].
   ///
@@ -126,6 +131,7 @@ class LeftSwipeConfig {
     VoidCallback? onPanelClosed,
     List<SwipeZone>? zones,
     ZoneTransitionStyle? zoneTransitionStyle,
+    FullSwipeConfig? fullSwipeConfig,
   }) {
     return LeftSwipeConfig(
       mode: mode ?? this.mode,
@@ -140,6 +146,7 @@ class LeftSwipeConfig {
       onPanelClosed: onPanelClosed ?? this.onPanelClosed,
       zones: zones ?? this.zones,
       zoneTransitionStyle: zoneTransitionStyle ?? this.zoneTransitionStyle,
+      fullSwipeConfig: fullSwipeConfig ?? this.fullSwipeConfig,
     );
   }
 
@@ -159,7 +166,8 @@ class LeftSwipeConfig {
           onPanelOpened == other.onPanelOpened &&
           onPanelClosed == other.onPanelClosed &&
           listEquals(zones, other.zones) &&
-          zoneTransitionStyle == other.zoneTransitionStyle;
+          zoneTransitionStyle == other.zoneTransitionStyle &&
+          fullSwipeConfig == other.fullSwipeConfig;
 
   @override
   int get hashCode => Object.hashAll([
@@ -175,5 +183,6 @@ class LeftSwipeConfig {
         onPanelClosed,
         zones,
         zoneTransitionStyle,
+        fullSwipeConfig,
       ]);
 }

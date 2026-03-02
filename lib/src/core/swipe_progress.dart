@@ -13,6 +13,7 @@ class SwipeProgress {
     required this.ratio,
     required this.isActivated,
     required this.rawOffset,
+    this.fullSwipeRatio = 0.0,
   });
 
   /// The direction of the current swipe.
@@ -29,12 +30,16 @@ class SwipeProgress {
   /// Raw pixel displacement from the origin position.
   final double rawOffset;
 
+  /// Progress ratio from 0.0 to 1.0 specifically for the full-swipe threshold.
+  final double fullSwipeRatio;
+
   /// A constant representing no swipe in progress.
   static const SwipeProgress zero = SwipeProgress(
     direction: SwipeDirection.none,
     ratio: 0.0,
     isActivated: false,
     rawOffset: 0.0,
+    fullSwipeRatio: 0.0,
   );
 
   /// Returns a copy of this progress with the given fields replaced.
@@ -43,12 +48,14 @@ class SwipeProgress {
     double? ratio,
     bool? isActivated,
     double? rawOffset,
+    double? fullSwipeRatio,
   }) {
     return SwipeProgress(
       direction: direction ?? this.direction,
       ratio: ratio ?? this.ratio,
       isActivated: isActivated ?? this.isActivated,
       rawOffset: rawOffset ?? this.rawOffset,
+      fullSwipeRatio: fullSwipeRatio ?? this.fullSwipeRatio,
     );
   }
 
@@ -59,11 +66,12 @@ class SwipeProgress {
         other.direction == direction &&
         other.ratio == ratio &&
         other.isActivated == isActivated &&
-        other.rawOffset == rawOffset;
+        other.rawOffset == rawOffset &&
+        other.fullSwipeRatio == fullSwipeRatio;
   }
 
   @override
-  int get hashCode => Object.hash(direction, ratio, isActivated, rawOffset);
+  int get hashCode => Object.hash(direction, ratio, isActivated, rawOffset, fullSwipeRatio);
 
   @override
   String toString() {
