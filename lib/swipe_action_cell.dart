@@ -7,6 +7,7 @@
 library;
 
 export 'src/accessibility/swipe_semantic_config.dart';
+export 'src/actions/full_swipe/full_swipe_config.dart';
 export 'src/actions/intentional/left_swipe_mode.dart';
 export 'src/actions/intentional/post_action_behavior.dart';
 export 'src/actions/intentional/swipe_action.dart';

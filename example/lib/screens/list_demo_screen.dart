@@ -71,7 +71,7 @@ class _ListDemoScreenState extends State<ListDemoScreen> {
           child: ListTile(
             leading: CircleAvatar(child: Text('${index + 1}')),
             title: Text(label),
-            subtitle: const Text('Left swipe to delete (with undo)'),
+            subtitle: const Text('Left swipe (or full-swipe) to delete'),
           ),
         );
       },
