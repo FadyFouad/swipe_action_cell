@@ -264,15 +264,19 @@ class SwipeActionCell extends StatefulWidget {
     return SwipeActionCell(
       controller: controller,
       leftSwipeConfig: LeftSwipeConfig(
-        mode: fullSwipeConfig == null ? LeftSwipeMode.reveal : LeftSwipeMode.autoTrigger,
+        mode: fullSwipeConfig == null
+            ? LeftSwipeMode.reveal
+            : LeftSwipeMode.autoTrigger,
         actions: fullSwipeConfig == null ? [action] : const [],
         postActionBehavior: PostActionBehavior.animateOut,
         enableHaptic: true,
         fullSwipeConfig: effectiveFullSwipe,
       ),
-      undoConfig: fullSwipeConfig == null ? null : SwipeUndoConfig(
-        onUndoExpired: onDeleted,
-      ),
+      undoConfig: fullSwipeConfig == null
+          ? null
+          : SwipeUndoConfig(
+              onUndoExpired: onDeleted,
+            ),
       visualConfig: buildVisualConfig(
         resolvedStyle: resolved,
         leftBackground: (context, progress) => ColoredBox(
@@ -336,7 +340,9 @@ class SwipeActionCell extends StatefulWidget {
     return SwipeActionCell(
       controller: controller,
       leftSwipeConfig: LeftSwipeConfig(
-        mode: fullSwipeConfig == null ? LeftSwipeMode.reveal : LeftSwipeMode.autoTrigger,
+        mode: fullSwipeConfig == null
+            ? LeftSwipeMode.reveal
+            : LeftSwipeMode.autoTrigger,
         actions: fullSwipeConfig == null ? [action] : const [],
         postActionBehavior: PostActionBehavior.animateOut,
         onActionTriggered: fullSwipeConfig == null ? null : onArchived,
@@ -525,13 +531,14 @@ class SwipeActionCell extends StatefulWidget {
     final hasRight = onFavorited != null;
     final hasLeft = actions != null && actions.isNotEmpty;
 
-    final effectiveFullSwipe = (hasLeft && identical(fullSwipeConfig, _defaultFullSwipe))
-        ? FullSwipeConfig(
-            enabled: true,
-            threshold: 0.75,
-            action: actions!.first,
-          )
-        : fullSwipeConfig;
+    final effectiveFullSwipe =
+        (hasLeft && identical(fullSwipeConfig, _defaultFullSwipe))
+            ? FullSwipeConfig(
+                enabled: true,
+                threshold: 0.75,
+                action: actions!.first,
+              )
+            : fullSwipeConfig;
 
     return SwipeActionCell(
       controller: controller,
@@ -1423,11 +1430,15 @@ class SwipeActionCellState extends State<SwipeActionCell>
     _controller.animateWith(simulation);
   }
 
-  double _effectiveMaxTranslation(
-      double widgetWidth, SwipeDirection direction) {
-    double maxT = direction == SwipeDirection.right
+  double _restingTranslation(double widgetWidth, SwipeDirection direction) {
+    return direction == SwipeDirection.right
         ? (effectiveAnimationConfig.maxTranslationRight ?? widgetWidth * 0.6)
         : _leftMaxTranslation(widgetWidth);
+  }
+
+  double _effectiveMaxTranslation(
+      double widgetWidth, SwipeDirection direction) {
+    double maxT = _restingTranslation(widgetWidth, direction);
 
     final fsCfg = _resolvedFullSwipeConfig(direction);
     if (fsCfg != null && fsCfg.enabled) {
@@ -1608,7 +1619,9 @@ class SwipeActionCellState extends State<SwipeActionCell>
       _snapBack(_controller.value, velocity > 0 ? velocity : 0.0);
       return;
     }
-    final ratio = _controller.value.abs() / maxT;
+
+    final restingT = _restingTranslation(widgetWidth, _lockedDirection);
+    final ratio = _controller.value.abs() / restingT;
     final forwardZones = _effectiveForwardZones();
     final backwardZones = _effectiveBackwardZones();
     final activeForwardZone = (forwardZones != null && _dragIsForward)
@@ -1635,8 +1648,10 @@ class SwipeActionCellState extends State<SwipeActionCell>
     }
     if (shouldComplete) {
       _updateState(SwipeState.animatingToOpen);
-      _animateToOpen(_controller.value,
-          _lockedDirection == SwipeDirection.right ? maxT : -maxT, velocity);
+      _animateToOpen(
+          _controller.value,
+          _lockedDirection == SwipeDirection.right ? restingT : -restingT,
+          velocity);
     } else {
       _updateState(SwipeState.animatingToClose);
       _snapBack(_controller.value, velocity);

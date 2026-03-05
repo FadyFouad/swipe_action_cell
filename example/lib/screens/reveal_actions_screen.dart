@@ -72,6 +72,22 @@ class _RevealActionsScreenState extends State<RevealActionsScreen> {
                   },
                 ),
               ],
+              fullSwipeConfig: FullSwipeConfig(
+                enabled: true,
+                threshold: .5,
+                action: SwipeAction(
+                  icon: const Icon(Icons.delete_outline),
+                  label: 'Delete',
+                  backgroundColor: const Color(0xFFE53935),
+                  foregroundColor: const Color(0xFFFFFFFF),
+                  onTap: () {
+                    setState(() => _lastAction = 'Delete');
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Deleted (Full Swipe)!')),
+                    );
+                  },
+                ),
+              ),
             ),
             child: const Card(
               margin: EdgeInsets.zero,
