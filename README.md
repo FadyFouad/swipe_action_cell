@@ -7,7 +7,9 @@
 > A Flutter list-cell widget with **asymmetric swipe semantics** — right swipe increments a value progressively, left swipe commits a destructive or reveal action.
 
 ![Delete with undo](https://raw.githubusercontent.com/FadyFouad/swipe_action_cell/main/doc/assets/demo-delete.gif)
-![Reveal actions](https://raw.githubusercontent.com/FadyFouad/swipe_action_cell/main/doc/assets/demo-reveal.gif)
+![Reveal actions](https://raw.githubusercontent.com/FadyFouad/swipe_action_cell/main/doc/assets/demo-swipe-reveal.gif)
+![Multi-action panel](https://raw.githubusercontent.com/FadyFouad/swipe_action_cell/main/doc/assets/demo-multi-action.gif)
+![Full-swipe expansion](https://raw.githubusercontent.com/FadyFouad/swipe_action_cell/main/doc/assets/demo-full-swipe.gif)
 
 ## Features
 
@@ -15,6 +17,17 @@
 - **Spring-based physics** — natural feel with configurable spring stiffness and damping, not fixed-duration animations
 - **Built-in undo** — 5-second undo window before a destructive action fires, cancelable programmatically
 - **Reveal mode** — left swipe slides open a panel of 1–3 tappable action buttons
+
+  ![Swipe reveal](https://raw.githubusercontent.com/FadyFouad/swipe_action_cell/main/doc/assets/demo-swipe-reveal.gif)
+
+- **Multi-action panel** — reveal up to 3 actions simultaneously; swipe further to expand the primary action to fill the cell
+
+  ![Multi-action panel](https://raw.githubusercontent.com/FadyFouad/swipe_action_cell/main/doc/assets/demo-multi-action.gif)
+
+- **Full-swipe auto-trigger** — drag all the way across to instantly commit the primary action without tapping; the designated action expands to fill the panel as you approach the threshold
+
+  ![Full-swipe expansion](https://raw.githubusercontent.com/FadyFouad/swipe_action_cell/main/doc/assets/demo-full-swipe.gif)
+
 - **Multi-zone swipes** — up to 4 distinct threshold zones per direction, each with its own visual and callback
 - **Zero-config templates** — six prebuilt factory constructors (`.delete`, `.archive`, `.favorite`, `.checkbox`, `.counter`, `.standard`) work out of the box
 - **Accessibility and RTL** — semantic labels, keyboard navigation, and direction-adaptive swipe semantics for right-to-left layouts
@@ -35,7 +48,7 @@ SwipeActionCell.delete(
 
 ```yaml
 dependencies:
-  swipe_action_cell: ^1.0.0
+  swipe_action_cell: ^1.1.1
 ```
 
 Or run:
@@ -81,6 +94,58 @@ flutter pub add swipe_action_cell
 | `actionPanelWidth` | `double?` | `null` | Panel width in logical pixels; auto-calculated when `null` |
 | `postActionBehavior` | `PostActionBehavior` | `.snapBack` | What happens after auto-trigger fires |
 | `enableHaptic` | `bool` | `false` | Haptic feedback at activation threshold |
+
+### FullSwipeConfig
+
+Attach to either `LeftSwipeConfig.fullSwipeConfig` or `RightSwipeConfig.fullSwipeConfig` to enable the full-swipe auto-trigger and expand animation.
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `enabled` | `bool` | required | Activates full-swipe behavior for this direction |
+| `threshold` | `double` | `0.75` | Fraction of widget width at which the full-swipe fires (must exceed `activationThreshold`) |
+| `action` | `SwipeAction` | required | The action triggered on full swipe; should match one of the reveal `actions` |
+| `expandAnimation` | `bool` | `false` | Animates the designated action expanding to fill the panel as the threshold approaches |
+| `enableHaptic` | `bool` | `false` | Haptic pulse when the full-swipe threshold is crossed |
+| `fullSwipeProgressBehavior` | `FullSwipeProgressBehavior` | `.customAction` | Right-swipe only: `.setToMax` or `.customAction` |
+
+**Example — multi-action reveal with full-swipe expansion:**
+
+```dart
+SwipeActionCell(
+  leftSwipeConfig: LeftSwipeConfig(
+    mode: LeftSwipeMode.reveal,
+    actions: [
+      SwipeAction(
+        icon: const Icon(Icons.flag),
+        label: 'Flag',
+        backgroundColor: Colors.orange,
+        foregroundColor: Colors.white,
+        onTap: () {},
+      ),
+      SwipeAction(
+        icon: const Icon(Icons.delete),
+        label: 'Delete',
+        backgroundColor: Colors.red,
+        foregroundColor: Colors.white,
+        onTap: () {},
+      ),
+    ],
+    fullSwipeConfig: FullSwipeConfig(
+      enabled: true,
+      threshold: 0.8,
+      expandAnimation: true,   // actions start equal; Delete expands on further drag
+      action: SwipeAction(
+        icon: const Icon(Icons.delete),
+        label: 'Delete',
+        backgroundColor: Colors.red,
+        foregroundColor: Colors.white,
+        onTap: () => _delete(),
+      ),
+    ),
+  ),
+  child: const ListTile(title: Text('Swipe left')),
+)
+```
 
 ### RightSwipeConfig
 

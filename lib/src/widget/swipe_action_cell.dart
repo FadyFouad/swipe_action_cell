@@ -2157,7 +2157,29 @@ class SwipeActionCellState extends State<SwipeActionCell>
                       final fsCfg = _resolvedFullSwipeConfig(_lockedDirection);
                       if (fsCfg != null && fsCfg.enabled) {
                         final rawRatio = offset.abs() / width;
-                        currentFullSwipeRatio = (rawRatio / fsCfg.threshold).clamp(0.0, 1.0);
+                        // For backward reveal mode, delay expansion until the
+                        // panel is fully open so all actions start at equal
+                        // width. Only applies when the reveal ratio sits
+                        // between activationThreshold and the full-swipe
+                        // threshold.
+                        double startRatio = effectiveAnimationConfig.activationThreshold;
+                        if (!_dragIsForward) {
+                          final backCfg = _resolvedBackwardConfig;
+                          if (backCfg != null &&
+                              backCfg.mode == LeftSwipeMode.reveal &&
+                              backCfg.actions.isNotEmpty) {
+                            final revealRatio =
+                                _leftMaxTranslation(width) / width;
+                            if (revealRatio > startRatio &&
+                                revealRatio < fsCfg.threshold) {
+                              startRatio = revealRatio;
+                            }
+                          }
+                        }
+                        final denom = fsCfg.threshold - startRatio;
+                        currentFullSwipeRatio = rawRatio <= startRatio || denom <= 0.0
+                            ? 0.0
+                            : ((rawRatio - startRatio) / denom).clamp(0.0, 1.0);
                       }
                     }
 

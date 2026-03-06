@@ -5,7 +5,7 @@ import 'package:swipe_action_cell/src/actions/intentional/swipe_action_panel.dar
 
 void main() {
   group('Full-Swipe Expand Visuals', () {
-    testWidgets('at fullSwipeRatio == 0.5 at activationThreshold',
+    testWidgets('at fullSwipeRatio == 0.0 at activationThreshold',
         (tester) async {
       final action1 = SwipeAction(
         icon: const Icon(Icons.archive),
@@ -61,15 +61,15 @@ void main() {
       ).evaluate().where((e) => (e.widget as SizedBox).child is ClipRect).map((e) => e.widget as SizedBox).toList();
 
       expect(panelSizedBoxes.length, 2);
-      expect(panelSizedBoxes[0].width, closeTo(40.0, 0.001));
-      expect(panelSizedBoxes[1].width, closeTo(120.0, 0.001));
+      expect(panelSizedBoxes[0].width, closeTo(80.0, 0.001));
+      expect(panelSizedBoxes[1].width, closeTo(80.0, 0.001));
       
       await gesture.up();
       await tester.pumpAndSettle();
     });
 
     testWidgets(
-        'at fullSwipeRatio == 0.75 at 240 pixels',
+        'at fullSwipeRatio == one-third at 240 pixels (expansion starts at reveal width)',
         (tester) async {
       final action1 = SwipeAction(
         icon: const Icon(Icons.archive),
@@ -110,11 +110,12 @@ void main() {
         ),
       ));
 
-      // rawRatio = 240 / 400 = 0.6.
-      // threshold = 0.8. progress = 0.6 / 0.8 = 0.75.
+      // revealRatio = 200/400 = 0.5, threshold = 0.8 → startRatio = 0.5
+      // rawRatio = 240/400 = 0.6
+      // fullSwipeRatio = (0.6 - 0.5) / (0.8 - 0.5) = 1/3
       // totalRevealedWidth = 240. normalWidth = 120.
-      // Archive = 120 * (1 - 0.75) = 30.
-      // Delete = 240 - 30 = 210.
+      // Archive = 120 * (1 - 1/3) = 80.
+      // Delete = 240 - 80 = 160.
       final gesture = await tester.startGesture(tester.getCenter(find.text('Cell')));
       await gesture.moveBy(const Offset(-240, 0));
       await tester.pump();
@@ -125,13 +126,13 @@ void main() {
       ).evaluate().where((e) => (e.widget as SizedBox).child is ClipRect).map((e) => e.widget as SizedBox).toList();
 
       expect(panelSizedBoxes.length, 2);
-      expect(panelSizedBoxes[0].width, closeTo(30.0, 0.001));
-      expect(panelSizedBoxes[1].width, closeTo(210.0, 0.001));
+      expect(panelSizedBoxes[0].width, closeTo(80.0, 0.001));
+      expect(panelSizedBoxes[1].width, closeTo(160.0, 0.001));
 
       final opacityWidget = tester.widget<Opacity>(
           find.descendant(of: find.byType(SwipeActionPanel), matching: find.byType(Opacity)).first);
-      expect(opacityWidget.opacity, closeTo(0.25, 0.001));
-      
+      expect(opacityWidget.opacity, closeTo(2.0 / 3.0, 0.001));
+
       await gesture.up();
       await tester.pumpAndSettle();
     });
@@ -287,9 +288,9 @@ void main() {
       ).evaluate().where((e) => (e.widget as SizedBox).child is ClipRect).map((e) => e.widget as SizedBox).toList();
 
       expect(panelSizedBoxes.length, 3);
-      expect(panelSizedBoxes[0].width, closeTo(15.0, 0.001));
-      expect(panelSizedBoxes[1].width, closeTo(150.0, 0.001));
-      expect(panelSizedBoxes[2].width, closeTo(15.0, 0.001));
+      expect(panelSizedBoxes[0].width, closeTo(30.0, 0.001));
+      expect(panelSizedBoxes[1].width, closeTo(120.0, 0.001));
+      expect(panelSizedBoxes[2].width, closeTo(30.0, 0.001));
       
       await gesture.up();
       await tester.pumpAndSettle();
@@ -338,8 +339,8 @@ void main() {
         matching: find.byType(SizedBox),
       ).evaluate().where((e) => (e.widget as SizedBox).child is ClipRect).map((e) => e.widget as SizedBox).toList();
       
-      expect(panelSizedBoxes[0].width, closeTo(40.0, 0.001));
-      expect(panelSizedBoxes[1].width, closeTo(120.0, 0.001));
+      expect(panelSizedBoxes[0].width, closeTo(80.0, 0.001));
+      expect(panelSizedBoxes[1].width, closeTo(80.0, 0.001));
 
       await gesture.up();
       await tester.pumpAndSettle();
@@ -373,10 +374,11 @@ void main() {
         ),
       ));
 
-      // Drag to 240. rawRatio 0.6. progress 0.75.
+      // revealRatio = 200/400 = 0.5, threshold = 0.8 → startRatio = 0.5
+      // rawRatio = 240/400 = 0.6. fullSwipeRatio = (0.6-0.5)/(0.8-0.5) = 1/3.
       // totalRevealedWidth 240. normalWidth 120.
-      // A2 (shrinking) = 120 * (1 - 0.75) = 30.
-      // A1 (expanding) = 240 - 30 = 210.
+      // A2 (shrinking) = 120 * (1 - 1/3) = 80.
+      // A1 (expanding) = 240 - 80 = 160.
       final gesture = await tester.startGesture(tester.getCenter(find.text('Cell')));
       await gesture.moveBy(const Offset(-240, 0));
       await tester.pump();
@@ -386,8 +388,8 @@ void main() {
         matching: find.byType(SizedBox),
       ).evaluate().where((e) => (e.widget as SizedBox).child is ClipRect).map((e) => e.widget as SizedBox).toList();
 
-      expect(panelSizedBoxes[0].width, closeTo(210.0, 0.001));
-      expect(panelSizedBoxes[1].width, closeTo(30.0, 0.001));
+      expect(panelSizedBoxes[0].width, closeTo(160.0, 0.001));
+      expect(panelSizedBoxes[1].width, closeTo(80.0, 0.001));
 
       await gesture.up();
       await tester.pumpAndSettle();
