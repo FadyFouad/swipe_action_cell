@@ -6,7 +6,6 @@
 
 > A Flutter list-cell widget with **asymmetric swipe semantics** — right swipe increments a value progressively, left swipe commits a destructive or reveal action.
 
-![Delete with undo](https://raw.githubusercontent.com/FadyFouad/swipe_action_cell/main/doc/assets/demo-delete.gif)
 ![Reveal actions](https://raw.githubusercontent.com/FadyFouad/swipe_action_cell/main/doc/assets/demo-swipe-reveal.gif)
 ![Multi-action panel](https://raw.githubusercontent.com/FadyFouad/swipe_action_cell/main/doc/assets/demo-multi-action.gif)
 ![Full-swipe expansion](https://raw.githubusercontent.com/FadyFouad/swipe_action_cell/main/doc/assets/demo-full-swipe.gif)
