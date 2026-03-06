@@ -34,7 +34,7 @@ import 'swipe_cell_handle.dart';
 /// ```
 ///
 /// **Lifecycle**: Create the controller before or after the widget mounts.
-/// Call [dispose] when done — typically in [State.dispose]:
+/// Call [dispose] when done — typically in `State.dispose`:
 ///
 /// ```dart
 /// @override
@@ -185,6 +185,33 @@ class SwipeController extends ChangeNotifier {
     _handle!.executeCommitUndo();
   }
 
+  /// Programmatically triggers the full-swipe action for [direction] on the
+  /// attached cell.
+  ///
+  /// Behaves identically to the user dragging past the full-swipe threshold
+  /// and releasing: fires the configured [FullSwipeConfig.action] (or
+  /// max-value jump for progressive mode), runs the post-action animation,
+  /// and notifies listeners.
+  ///
+  /// No-op (debug assertion in debug mode) when:
+  /// - No cell is currently attached, OR
+  /// - The cell has no [FullSwipeConfig] for [direction], OR
+  /// - [FullSwipeConfig.enabled] is false for [direction], OR
+  /// - [currentState] is not [SwipeState.idle].
+  void triggerFullSwipe(SwipeDirection direction) {
+    assert(
+      _handle != null,
+      'triggerFullSwipe() called with no cell attached to this SwipeController.',
+    );
+    assert(
+      _currentState == SwipeState.idle,
+      'triggerFullSwipe() called when currentState is $_currentState. '
+      'triggerFullSwipe() is only valid from the idle state.',
+    );
+    if (_handle == null || _currentState != SwipeState.idle) return;
+    _handle!.executeFullSwipe(direction);
+  }
+
   /// Sets the progressive value of the attached cell to [value], clamped
   /// to [[RightSwipeConfig.minValue]..[RightSwipeConfig.maxValue]].
   ///
@@ -206,8 +233,8 @@ class SwipeController extends ChangeNotifier {
 
   /// Attaches a [SwipeCellHandle] from [SwipeActionCellState].
   ///
-  /// Called by [SwipeActionCellState] in [State.didChangeDependencies] /
-  /// [State.initState]. Asserts in debug mode if a handle is already attached
+  /// Called by [SwipeActionCellState] in `State.didChangeDependencies` /
+  /// `State.initState`. Asserts in debug mode if a handle is already attached
   /// (one controller ↔ one cell invariant).
   ///
   /// Not for consumer use — this method is part of the package-internal
@@ -223,7 +250,7 @@ class SwipeController extends ChangeNotifier {
 
   /// Detaches the current [SwipeCellHandle].
   ///
-  /// Called by [SwipeActionCellState] in [State.dispose].
+  /// Called by [SwipeActionCellState] in `State.dispose`.
   /// No-op if [handle] does not match the currently attached handle.
   ///
   /// Not for consumer use.

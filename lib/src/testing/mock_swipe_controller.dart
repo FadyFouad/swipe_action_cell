@@ -1,4 +1,5 @@
 import '../controller/swipe_controller.dart';
+import '../core/swipe_direction.dart';
 import '../core/swipe_state.dart';
 
 /// Test double for [SwipeController] that records method invocations.
@@ -22,6 +23,7 @@ class MockSwipeController extends SwipeController {
   int _close = 0;
   int _resetProgress = 0;
   int _undo = 0;
+  int _triggerFullSwipe = 0;
 
   /// Number of times [openLeft] was called.
   int get openLeftCallCount => _openLeft;
@@ -40,6 +42,9 @@ class MockSwipeController extends SwipeController {
 
   /// Number of times [undo] was called.
   int get undoCallCount => _undo;
+
+  /// Number of times [triggerFullSwipe] was called.
+  int get triggerFullSwipeCallCount => _triggerFullSwipe;
 
   /// Stub return value for [currentState]. Default: [SwipeState.idle].
   SwipeState stubbedState = SwipeState.idle;
@@ -71,6 +76,9 @@ class MockSwipeController extends SwipeController {
     return false;
   }
 
+  @override
+  void triggerFullSwipe(SwipeDirection direction) => _triggerFullSwipe++;
+
   /// Resets all call counts to 0. Does not modify stubs.
   void resetCalls() {
     _openLeft = 0;
@@ -78,5 +86,6 @@ class MockSwipeController extends SwipeController {
     _close = 0;
     _resetProgress = 0;
     _undo = 0;
+    _triggerFullSwipe = 0;
   }
 }

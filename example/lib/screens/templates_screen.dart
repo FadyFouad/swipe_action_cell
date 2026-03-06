@@ -45,7 +45,7 @@ class _TemplatesScreenState extends State<TemplatesScreen> {
             child: const ListTile(
               leading: Icon(Icons.mail_outline),
               title: Text('Delete template'),
-              subtitle: Text('Left swipe → undo strip → onDeleted'),
+              subtitle: Text('Left swipe (or full-swipe) → undo strip → onDeleted'),
             ),
           )
         else
@@ -67,7 +67,7 @@ class _TemplatesScreenState extends State<TemplatesScreen> {
             child: const ListTile(
               leading: Icon(Icons.article_outlined),
               title: Text('Archive template'),
-              subtitle: Text('Left swipe → onArchived fires on commit'),
+              subtitle: Text('Left swipe (or full-swipe) → onArchived fires on commit'),
             ),
           )
         else
@@ -177,7 +177,7 @@ class _TemplatesScreenState extends State<TemplatesScreen> {
             ),
             title: const Text('Standard template'),
             subtitle: const Text(
-                'Right swipe → favorite  |  Left swipe → reveal Share'),
+                'Right swipe → favorite  |  Left swipe (or full-swipe) → share'),
           ),
         ),
       ],

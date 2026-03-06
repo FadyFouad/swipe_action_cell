@@ -28,6 +28,40 @@ class SwipeTester {
     await tester.pumpAndSettle();
   }
 
+  /// Drags the cell fully to the right, crossing the full-swipe threshold,
+  /// and pumps until settled.
+  ///
+  /// [ratio] is the drag distance as a fraction of the cell width (defaults
+  /// to 1.0).  A ratio of 1.0 exceeds any [FullSwipeConfig.threshold] value
+  /// (which is capped at 1.0).  Values up to 1.5 are accepted to give tests
+  /// extra headroom; pass a larger value only when you intentionally want to
+  /// simulate an over-drag.
+  static Future<void> fullSwipeRight(WidgetTester tester, Finder finder,
+      {double ratio = 1.0}) async {
+    final rect = tester.getRect(finder);
+    final clampedRatio = ratio.clamp(0.0, 1.5);
+    await tester.drag(finder, Offset(rect.width * clampedRatio, 0),
+        warnIfMissed: false);
+    await tester.pumpAndSettle();
+  }
+
+  /// Drags the cell fully to the left, crossing the full-swipe threshold,
+  /// and pumps until settled.
+  ///
+  /// [ratio] is the drag distance as a fraction of the cell width (defaults
+  /// to 1.0).  A ratio of 1.0 exceeds any [FullSwipeConfig.threshold] value
+  /// (which is capped at 1.0).  Values up to 1.5 are accepted to give tests
+  /// extra headroom; pass a larger value only when you intentionally want to
+  /// simulate an over-drag.
+  static Future<void> fullSwipeLeft(WidgetTester tester, Finder finder,
+      {double ratio = 1.0}) async {
+    final rect = tester.getRect(finder);
+    final clampedRatio = ratio.clamp(0.0, 1.5);
+    await tester.drag(finder, Offset(-(rect.width * clampedRatio), 0),
+        warnIfMissed: false);
+    await tester.pumpAndSettle();
+  }
+
   /// Flings the cell left with the specified [velocity].
   static Future<void> flingLeft(WidgetTester tester, Finder finder,
       {double velocity = 1000}) async {

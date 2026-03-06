@@ -9,9 +9,9 @@ class ProgressiveSwipeIndicator extends StatelessWidget {
     required this.fillRatio,
     this.config = const ProgressIndicatorConfig(),
   }) : assert(fillRatio >= 0.0 && fillRatio <= 1.0,
-            'fillRatio must be in [0.0, 1.0]');
+            'fillRatio must be in `[0.0, 1.0]`');
 
-  /// Proportion of the indicator filled. Range: [0.0, 1.0].
+  /// Proportion of the indicator filled. Range: `[0.0, 1.0]`.
   final double fillRatio;
 
   /// Visual appearance configuration.

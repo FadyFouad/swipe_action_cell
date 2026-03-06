@@ -42,6 +42,7 @@ class _RevealActionsScreenState extends State<RevealActionsScreen> {
             leftSwipeConfig: LeftSwipeConfig(
               mode: LeftSwipeMode.reveal,
               enableHaptic: true,
+
               // actions: list of SwipeAction buttons shown in the reveal panel.
               // Each SwipeAction has an icon, label, background color,
               // and an onTap callback.
@@ -72,6 +73,23 @@ class _RevealActionsScreenState extends State<RevealActionsScreen> {
                   },
                 ),
               ],
+              fullSwipeConfig: FullSwipeConfig(
+                enabled: true,
+
+                threshold: .5,
+                action: SwipeAction(
+                  icon: const Icon(Icons.delete_outline),
+                  label: 'Delete',
+                  backgroundColor: const Color(0xFFE53935),
+                  foregroundColor: const Color(0xFFFFFFFF),
+                  onTap: () {
+                    setState(() => _lastAction = 'Delete');
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Deleted (Full Swipe)!')),
+                    );
+                  },
+                ),
+              ),
             ),
             child: const Card(
               margin: EdgeInsets.zero,

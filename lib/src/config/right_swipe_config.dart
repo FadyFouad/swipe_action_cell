@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../actions/full_swipe/full_swipe_config.dart';
 import '../actions/progressive/overflow_behavior.dart';
 import '../actions/progressive/progress_indicator_config.dart';
 import '../core/swipe_zone.dart';
@@ -50,6 +51,7 @@ class RightSwipeConfig {
     this.onSwipeCancelled,
     this.zones,
     this.zoneTransitionStyle = ZoneTransitionStyle.instant,
+    this.fullSwipeConfig,
   })  : assert(stepValue > 0.0, 'stepValue must be > 0, got $stepValue'),
         assert(
           minValue < maxValue,
@@ -68,6 +70,9 @@ class RightSwipeConfig {
 
   /// Visual transition between zone backgrounds.
   final ZoneTransitionStyle zoneTransitionStyle;
+
+  /// Optional configuration for full-swipe auto-trigger.
+  final FullSwipeConfig? fullSwipeConfig;
 
   /// The initial cumulative value in uncontrolled mode.
   final double initialValue;
@@ -130,6 +135,7 @@ class RightSwipeConfig {
     VoidCallback? onSwipeCancelled,
     List<SwipeZone>? zones,
     ZoneTransitionStyle? zoneTransitionStyle,
+    FullSwipeConfig? fullSwipeConfig,
   }) {
     return RightSwipeConfig(
       value: value ?? this.value,
@@ -151,6 +157,7 @@ class RightSwipeConfig {
       onSwipeCancelled: onSwipeCancelled ?? this.onSwipeCancelled,
       zones: zones ?? this.zones,
       zoneTransitionStyle: zoneTransitionStyle ?? this.zoneTransitionStyle,
+      fullSwipeConfig: fullSwipeConfig ?? this.fullSwipeConfig,
     );
   }
 
@@ -175,7 +182,8 @@ class RightSwipeConfig {
           onSwipeCompleted == other.onSwipeCompleted &&
           onSwipeCancelled == other.onSwipeCancelled &&
           listEquals(zones, other.zones) &&
-          zoneTransitionStyle == other.zoneTransitionStyle;
+          zoneTransitionStyle == other.zoneTransitionStyle &&
+          fullSwipeConfig == other.fullSwipeConfig;
 
   @override
   int get hashCode => Object.hashAll([
@@ -196,5 +204,6 @@ class RightSwipeConfig {
         onSwipeCancelled,
         zones,
         zoneTransitionStyle,
+        fullSwipeConfig,
       ]);
 }

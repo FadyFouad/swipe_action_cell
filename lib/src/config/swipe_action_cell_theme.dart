@@ -63,7 +63,7 @@ class SwipeActionCellTheme extends ThemeExtension<SwipeActionCellTheme> {
     );
   }
 
-  /// Hard-cutover lerp: returns [other] when [t] >= 1.0, [this] otherwise.
+  /// Hard-cutover lerp: returns [other] when [t] >= 1.0, `this` otherwise.
   @override
   SwipeActionCellTheme lerp(
     ThemeExtension<SwipeActionCellTheme>? other,

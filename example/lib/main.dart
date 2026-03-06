@@ -7,6 +7,7 @@ import 'screens/multi_threshold_screen.dart';
 import 'screens/reveal_actions_screen.dart';
 import 'screens/rtl_screen.dart';
 import 'screens/templates_screen.dart';
+import 'screens/full_swipe_demo.dart';
 
 void main() => runApp(const SwipeActionCellExampleApp());
 
@@ -24,9 +25,9 @@ class SwipeActionCellExampleApp extends StatelessWidget {
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
       ),
-      // DefaultTabController manages the 8-tab state without a StatefulWidget.
+      // DefaultTabController manages the 9-tab state without a StatefulWidget.
       home: DefaultTabController(
-        length: 8,
+        length: 9,
         child: Scaffold(
           appBar: AppBar(
             title: const Text('SwipeActionCell Demo'),
@@ -42,10 +43,11 @@ class SwipeActionCellExampleApp extends StatelessWidget {
                 Tab(text: 'List'),
                 Tab(text: 'RTL'),
                 Tab(text: 'Templates'),
+                Tab(text: 'Full Swipe'),
               ],
             ),
           ),
-          // Each tab maps to one of the 8 screen widgets.
+          // Each tab maps to one of the 9 screen widgets.
           body: const TabBarView(
             children: [
               BasicScreen(),
@@ -56,6 +58,7 @@ class SwipeActionCellExampleApp extends StatelessWidget {
               ListDemoScreen(),
               RtlScreen(),
               TemplatesScreen(),
+              FullSwipeDemo(),
             ],
           ),
         ),

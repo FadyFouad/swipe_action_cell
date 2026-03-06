@@ -28,6 +28,12 @@ enum SwipeFeedbackEvent {
   /// Fired when a drag gesture is released below the activation threshold.
   /// Defaults to silent (no haptic); override via [SwipeFeedbackConfig.hapticOverrides].
   swipeCancelled,
+
+  /// Fired each time the drag position crosses the full-swipe threshold.
+  fullSwipeThresholdCrossed,
+
+  /// Fired on release above the full-swipe threshold, before the action executes.
+  fullSwipeActivation,
 }
 
 /// The haptic channel to invoke for a single pattern step.
@@ -138,6 +144,12 @@ class HapticPattern {
   /// Silent pattern — produces no haptic output.
   static const HapticPattern silent = HapticPattern([]);
 
+
+  /// Default pattern for full-swipe threshold crossing.
+  static const HapticPattern fullSwipeThreshold = HapticPattern.heavy;
+
+  /// Default pattern for full-swipe activation.
+  static const HapticPattern fullSwipeActivation = HapticPattern.success;
   /// Converts a legacy [SwipeZoneHaptic] enum value to a [HapticPattern].
   static HapticPattern? fromZoneHaptic(SwipeZoneHaptic? pattern) {
     if (pattern == null) return null;
