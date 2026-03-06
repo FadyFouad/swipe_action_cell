@@ -99,7 +99,6 @@ class _SwipeActionPanelState extends State<SwipeActionPanel> {
     }
 
     if (widget.designatedActionIndex != null) {
-      final int totalFlex = widget.actions.fold(0, (sum, a) => sum + (a.flex > 0 ? a.flex : 1));
       final List<double> widths = List.filled(widget.actions.length, 0.0);
       double nonDesignatedSum = 0.0;
 

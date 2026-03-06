@@ -1,5 +1,5 @@
-import '../actions/full_swipe/full_swipe_config.dart';
 import 'package:flutter/foundation.dart';
+import '../actions/full_swipe/full_swipe_config.dart';
 
 import '../actions/intentional/left_swipe_mode.dart';
 import '../actions/intentional/post_action_behavior.dart';

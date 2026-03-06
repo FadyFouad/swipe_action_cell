@@ -210,8 +210,8 @@ class SwipeActionCell extends StatefulWidget {
   static const _defaultFullSwipe = FullSwipeConfig(
     action: SwipeAction(
       icon: SizedBox(),
-      backgroundColor: Color(0),
-      foregroundColor: Color(0),
+      backgroundColor: Color(0x00000000),
+      foregroundColor: Color(0x00000000),
       onTap: _noOp,
     ),
   );
@@ -536,7 +536,7 @@ class SwipeActionCell extends StatefulWidget {
             ? FullSwipeConfig(
                 enabled: true,
                 threshold: 0.75,
-                action: actions!.first,
+                action: actions.first,
               )
             : fullSwipeConfig;
 
@@ -845,7 +845,6 @@ class SwipeActionCellState extends State<SwipeActionCell>
   // F016 full-swipe fields.
   bool _isFullSwipeArmed = false;
   bool _fullSwipeTriggered = false;
-  double _fullSwipeRatio = 0.0;
 
   late final AnimationController _controller;
   SwipeState _state = SwipeState.idle;
@@ -1329,7 +1328,6 @@ class SwipeActionCellState extends State<SwipeActionCell>
         _isPostIncrementSnapBack = false;
         _isPostActionSnapBack = false;
         _isFullSwipeArmed = false;
-        _fullSwipeRatio = 0.0;
       } else if (_state == SwipeState.animatingToOpen) {
         if (_dragIsForward && _resolvedForwardConfig != null) {
           _applyProgressiveIncrement();
@@ -1540,7 +1538,6 @@ class SwipeActionCellState extends State<SwipeActionCell>
     _isPostIncrementSnapBack = false;
     _isPostActionSnapBack = false;
     _isFullSwipeArmed = false;
-    _fullSwipeRatio = 0.0;
     _swipeStartedFired = false;
     _hapticThresholdFired = false;
     _lastHapticZoneIndex = -1;
@@ -2356,7 +2353,6 @@ class SwipeActionCellState extends State<SwipeActionCell>
     if (cfg == null || !cfg.enabled) {
       if (_isFullSwipeArmed) {
         _isFullSwipeArmed = false;
-        _fullSwipeRatio = 0.0;
       }
       return;
     }
@@ -2364,7 +2360,6 @@ class SwipeActionCellState extends State<SwipeActionCell>
     
 
     // T016: Smoothly interpolate fullSwipeRatio from 0.0 at reveal start to 1.0 at threshold.
-    _fullSwipeRatio = (rawRatio / cfg.threshold).clamp(0.0, 1.0);
 
     final nowArmed = rawRatio >= cfg.threshold;
     if (nowArmed != _isFullSwipeArmed) {
@@ -2383,7 +2378,6 @@ class SwipeActionCellState extends State<SwipeActionCell>
   void _applyFullSwipeAction(SwipeDirection direction, FullSwipeConfig cfg) {
     _fullSwipeTriggered = true;
     _isFullSwipeArmed = false;
-    _fullSwipeRatio = 0.0;
 
     if (cfg.enableHaptic) {
       _feedbackDispatcher?.fire(
