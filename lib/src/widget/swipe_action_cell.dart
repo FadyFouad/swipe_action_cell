@@ -1849,7 +1849,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
     );
   }
 
-  Widget _buildRevealPanel(double widgetWidth) {
+  Widget _buildRevealPanel(double widgetWidth, double fullSwipeRatio) {
     final config = _resolvedBackwardConfig!;
     final revealWidth =
         config.actionPanelWidth ?? 80.0 * config.actions.length.clamp(1, 3);
@@ -1896,7 +1896,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
           _updateState(SwipeState.animatingToClose);
           _snapBack(_controller.value, 0.0);
         },
-        fullSwipeRatio: _fullSwipeRatio,
+        fullSwipeRatio: fullSwipeRatio,
         designatedActionIndex: designatedIndex,
       ),
     );
@@ -2118,13 +2118,24 @@ class SwipeActionCellState extends State<SwipeActionCell>
                         : _leftMaxTranslation(width);
                     final ratio =
                         maxT > 0 ? (offset.abs() / maxT).clamp(0.0, 1.0) : 0.0;
+                    // Calculate fullSwipeRatio locally so it updates during animations (like snapBack).
+                    double currentFullSwipeRatio = 0.0;
+                    if (_lockedDirection != SwipeDirection.none) {
+                      final fsCfg = _resolvedFullSwipeConfig(_lockedDirection);
+                      if (fsCfg != null && fsCfg.enabled) {
+                        final rawRatio = offset.abs() / width;
+                        currentFullSwipeRatio = (rawRatio / fsCfg.threshold).clamp(0.0, 1.0);
+                      }
+                    }
+
                     final progress = SwipeProgress(
                       direction: _lockedDirection,
                       ratio: ratio,
                       isActivated:
                           ratio >= effectiveAnimationConfig.activationThreshold,
                       rawOffset: offset,
-                      fullSwipeRatio: _fullSwipeRatio,
+                      fullSwipeRatio: currentFullSwipeRatio,
+
                     );
                     // F009: Zone detection for haptic and semantics
                     if (_state == SwipeState.dragging) {
@@ -2230,11 +2241,11 @@ class SwipeActionCellState extends State<SwipeActionCell>
                                 LeftSwipeMode.reveal &&
                             _resolvedBackwardConfig!.actions.isNotEmpty &&
                             offset < -0.5 &&
-                            (_state == SwipeState.revealed ||
+                            (_state == SwipeState.revealed || _state == SwipeState.animatingToClose ||
                                 ((_state == SwipeState.dragging ||
                                         _state == SwipeState.animatingToOpen) &&
                                     _dragIsBackward)))
-                          _buildRevealPanel(width),
+                          _buildRevealPanel(width, currentFullSwipeRatio),
                         if (confirmOverlay != null) confirmOverlay,
 
 
