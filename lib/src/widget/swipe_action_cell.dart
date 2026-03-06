@@ -1057,6 +1057,14 @@ class SwipeActionCellState extends State<SwipeActionCell>
   @override
   void executeCommitUndo() => _commitUndo();
 
+  @override
+  void executeFullSwipe(SwipeDirection direction) {
+    final cfg = _resolvedFullSwipeConfig(direction);
+    if (cfg == null || !cfg.enabled) return;
+    _lockedDirection = direction;
+    _applyFullSwipeAction(direction, cfg);
+  }
+
   void _fireZoneHaptic(SwipeZoneHaptic? pattern) {
     if (pattern == null) return;
     switch (pattern) {
@@ -2039,6 +2047,20 @@ class SwipeActionCellState extends State<SwipeActionCell>
     SemanticsService.announce(msg, Directionality.of(context));
   }
 
+  /// Announces that the full-swipe threshold has been reached via
+  /// [SemanticsService], so screen reader users know that releasing will
+  /// trigger the full-swipe action.
+  void _announceFullSwipeArmed() {
+    if (!mounted) return;
+    final cfg = _resolvedFullSwipeConfig(_lockedDirection);
+    final actionLabel = cfg?.action.label;
+    final msg = (actionLabel != null && actionLabel.isNotEmpty)
+        ? 'Release to $actionLabel'
+        : 'Full swipe action ready. Release to trigger.';
+    // ignore: deprecated_member_use
+    SemanticsService.announce(msg, Directionality.of(context));
+  }
+
   /// Handles keyboard events for arrow-key navigation and Escape.
   KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
     if (event is! KeyDownEvent) return KeyEventResult.ignored;
@@ -2371,6 +2393,9 @@ class SwipeActionCellState extends State<SwipeActionCell>
           SwipeFeedbackEvent.fullSwipeThresholdCrossed,
           isForward: _dragIsForward,
         );
+      }
+      if (nowArmed) {
+        _announceFullSwipeArmed();
       }
     }
   }

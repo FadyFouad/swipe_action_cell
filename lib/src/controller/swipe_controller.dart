@@ -189,6 +189,33 @@ class SwipeController extends ChangeNotifier {
     _handle!.executeCommitUndo();
   }
 
+  /// Programmatically triggers the full-swipe action for [direction] on the
+  /// attached cell.
+  ///
+  /// Behaves identically to the user dragging past the full-swipe threshold
+  /// and releasing: fires the configured [FullSwipeConfig.action] (or
+  /// max-value jump for progressive mode), runs the post-action animation,
+  /// and notifies listeners.
+  ///
+  /// No-op (debug assertion in debug mode) when:
+  /// - No cell is currently attached, OR
+  /// - The cell has no [FullSwipeConfig] for [direction], OR
+  /// - [FullSwipeConfig.enabled] is false for [direction], OR
+  /// - [currentState] is not [SwipeState.idle].
+  void triggerFullSwipe(SwipeDirection direction) {
+    assert(
+      _handle != null,
+      'triggerFullSwipe() called with no cell attached to this SwipeController.',
+    );
+    assert(
+      _currentState == SwipeState.idle,
+      'triggerFullSwipe() called when currentState is $_currentState. '
+      'triggerFullSwipe() is only valid from the idle state.',
+    );
+    if (_handle == null || _currentState != SwipeState.idle) return;
+    _handle!.executeFullSwipe(direction);
+  }
+
   /// Sets the progressive value of the attached cell to [value], clamped
   /// to [[RightSwipeConfig.minValue]..[RightSwipeConfig.maxValue]].
   void setProgress(double value) {
