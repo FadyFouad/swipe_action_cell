@@ -10,7 +10,7 @@ import 'package:flutter/widgets.dart';
 
 import '../accessibility/swipe_semantic_config.dart';
 import '../actions/full_swipe/full_swipe_config.dart';
-import '../actions/full_swipe/full_swipe_expand_overlay.dart';
+
 import '../actions/intentional/left_swipe_mode.dart';
 import '../actions/intentional/post_action_behavior.dart';
 import '../actions/intentional/swipe_action.dart';
@@ -1851,10 +1851,26 @@ class SwipeActionCellState extends State<SwipeActionCell>
 
   Widget _buildRevealPanel(double widgetWidth) {
     final config = _resolvedBackwardConfig!;
-    final panelWidth =
+    final revealWidth =
         config.actionPanelWidth ?? 80.0 * config.actions.length.clamp(1, 3);
     final actions = config.actions.take(3).toList();
-    final currentWidth = _controller.value.abs().clamp(0.0, panelWidth);
+
+    // T016: Expansion follows the finger immediately if enabled.
+    final bool isExpanding = config.fullSwipeConfig?.enabled == true &&
+        config.fullSwipeConfig?.expandAnimation == true;
+    final double currentWidth = isExpanding
+        ? _controller.value.abs()
+        : _controller.value.abs().clamp(0.0, revealWidth);
+
+    int? designatedIndex;
+    final fsCfg = config.fullSwipeConfig;
+    if (fsCfg != null && fsCfg.enabled && fsCfg.expandAnimation) {
+      final index = actions.indexOf(fsCfg.action);
+      if (index != -1) {
+        designatedIndex = index;
+      }
+    }
+
     return Positioned(
       top: 0,
       bottom: 0,
@@ -1862,7 +1878,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
       width: currentWidth,
       child: SwipeActionPanel(
         actions: actions,
-        panelWidth: panelWidth,
+        panelWidth: currentWidth, // Pass ACTUAL current width
         enableHaptic: config.enableHaptic,
         onFeedbackRequest: _feedbackDispatcher != null
             ? () => _feedbackDispatcher!
@@ -1872,6 +1888,8 @@ class SwipeActionCellState extends State<SwipeActionCell>
           _updateState(SwipeState.animatingToClose);
           _snapBack(_controller.value, 0.0);
         },
+        fullSwipeRatio: _fullSwipeRatio,
+        designatedActionIndex: designatedIndex,
       ),
     );
   }
@@ -2211,18 +2229,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
                           _buildRevealPanel(width),
                         if (confirmOverlay != null) confirmOverlay,
 
-                        if (_fullSwipeRatio > 0 &&
-                            _resolvedFullSwipeConfig(_lockedDirection)
-                                    ?.expandAnimation ==
-                                true)
-                          FullSwipeExpandOverlay(
-                            action: _resolvedFullSwipeConfig(_lockedDirection)!
-                                .action,
-                            direction: _lockedDirection,
-                            ratio: _fullSwipeRatio,
-                            panelWidth: _effectiveMaxTranslation(
-                                width, _lockedDirection),
-                          ),
+
                         _buildDecoratedChild(translatedChild, progress),
                         // Reveal-mode body-tap interceptor: covers the visible
                         // cell area (excluding the exposed panel) so that
@@ -2335,12 +2342,10 @@ class SwipeActionCellState extends State<SwipeActionCell>
       return;
     }
     final rawRatio = absOffset / widgetWidth;
-    final activationThreshold = effectiveAnimationConfig.activationThreshold;
+    
 
-    // Smoothly interpolate fullSwipeRatio between activation and full-swipe thresholds.
-    _fullSwipeRatio = ((rawRatio - activationThreshold) /
-            (cfg.threshold - activationThreshold))
-        .clamp(0.0, 1.0);
+    // T016: Smoothly interpolate fullSwipeRatio from 0.0 at reveal start to 1.0 at threshold.
+    _fullSwipeRatio = (rawRatio / cfg.threshold).clamp(0.0, 1.0);
 
     final nowArmed = rawRatio >= cfg.threshold;
     if (nowArmed != _isFullSwipeArmed) {

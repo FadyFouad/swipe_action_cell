@@ -31,6 +31,93 @@ class _FullSwipeDemoState extends State<FullSwipeDemo> {
       padding: const EdgeInsets.all(16),
       children: [
         _buildHeader('Intentional Full-Swipe (Left)'),
+        _buildHeader('Multi-Action Expansion'),
+        _buildItem(
+          title: 'Three Actions (Last Expands)',
+          subtitle: 'Archive and Flag shrink/fade while Delete expands.',
+          leftConfig: LeftSwipeConfig(
+            mode: LeftSwipeMode.reveal,
+            actionPanelWidth: 240,
+            actions: [
+              SwipeAction(
+                icon: const Icon(Icons.archive),
+                label: 'Archive',
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
+                onTap: () => _showTriggered('Archive'),
+              ),
+              SwipeAction(
+                icon: const Icon(Icons.flag),
+                label: 'Flag',
+                backgroundColor: Colors.orange,
+                foregroundColor: Colors.white,
+                onTap: () => _showTriggered('Flag'),
+              ),
+              SwipeAction(
+                icon: const Icon(Icons.delete),
+                label: 'Delete',
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                onTap: () => _showTriggered('Delete'),
+              ),
+            ],
+            fullSwipeConfig: FullSwipeConfig(
+              enabled: true,
+              threshold: 0.8,
+              action: SwipeAction(
+                icon: const Icon(Icons.delete),
+                label: 'Delete',
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                onTap: () => _showTriggered('Delete (Full)'),
+              ),
+              expandAnimation: true,
+            ),
+          ),
+        ),
+        _buildItem(
+          title: 'Three Actions (Middle Expands)',
+          subtitle: 'Archive and Delete shrink while Flag expands.',
+          leftConfig: LeftSwipeConfig(
+            mode: LeftSwipeMode.reveal,
+            actionPanelWidth: 240,
+            actions: [
+              SwipeAction(
+                icon: const Icon(Icons.archive),
+                label: 'Archive',
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
+                onTap: () => _showTriggered('Archive'),
+              ),
+              SwipeAction(
+                icon: const Icon(Icons.flag),
+                label: 'Flag',
+                backgroundColor: Colors.orange,
+                foregroundColor: Colors.white,
+                onTap: () => _showTriggered('Flag'),
+              ),
+              SwipeAction(
+                icon: const Icon(Icons.delete),
+                label: 'Delete',
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                onTap: () => _showTriggered('Delete'),
+              ),
+            ],
+            fullSwipeConfig: FullSwipeConfig(
+              enabled: true,
+              threshold: 0.8,
+              action: SwipeAction(
+                icon: const Icon(Icons.flag),
+                label: 'Flag',
+                backgroundColor: Colors.orange,
+                foregroundColor: Colors.white,
+                onTap: () => _showTriggered('Flag (Full)'),
+              ),
+              expandAnimation: true,
+            ),
+          ),
+        ),
         _buildItem(
           title: 'Full-swipe to Delete',
           subtitle: 'iOS Mail style: drag far left to delete immediately.',

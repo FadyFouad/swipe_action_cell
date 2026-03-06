@@ -5,7 +5,7 @@ import 'package:swipe_action_cell/src/actions/full_swipe/full_swipe_config.dart'
 
 void main() {
   group('Full-Swipe US3 Visual Progress', () {
-    testWidgets('fullSwipeRatio is 0.0 at activationThreshold', (tester) async {
+    testWidgets('fullSwipeRatio is 0.5 at activationThreshold', (tester) async {
       double? capturedRatio;
       await tester.pumpWidget(MaterialApp(
         home: Scaffold(
@@ -47,7 +47,7 @@ void main() {
       // activationThreshold is 0.4 by default. 40% of 400 = 160.
       await tester.drag(find.text('Cell'), const Offset(-160, 0));
       await tester.pump();
-      expect(capturedRatio, 0.0);
+      expect(capturedRatio, 0.5);
     });
 
     testWidgets('fullSwipeRatio is 1.0 at fullSwipe threshold', (tester) async {

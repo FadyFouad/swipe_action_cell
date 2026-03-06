@@ -13,6 +13,8 @@ class SwipeActionPanel extends StatefulWidget {
     required this.onClose,
     this.enableHaptic = false,
     this.onFeedbackRequest,
+    this.fullSwipeRatio = 0.0,
+    this.designatedActionIndex,
   }) : assert(
           actions.length >= 1 && actions.length <= 3,
           'actions must contain 1–3 items',
@@ -32,6 +34,12 @@ class SwipeActionPanel extends StatefulWidget {
 
   /// Called when feedback (haptic/audio) is requested by a button tap.
   final VoidCallback? onFeedbackRequest;
+
+  /// Current full-swipe expand progress (0.0 to 1.0).
+  final double fullSwipeRatio;
+
+  /// Index of the designated action to expand during full swipe.
+  final int? designatedActionIndex;
 
   @override
   State<SwipeActionPanel> createState() => _SwipeActionPanelState();
@@ -90,6 +98,52 @@ class _SwipeActionPanelState extends State<SwipeActionPanel> {
       );
     }
 
+    if (widget.designatedActionIndex != null) {
+      final int totalFlex = widget.actions.fold(0, (sum, a) => sum + (a.flex > 0 ? a.flex : 1));
+      final List<double> widths = List.filled(widget.actions.length, 0.0);
+      double nonDesignatedSum = 0.0;
+
+      for (int i = 0; i < widget.actions.length; i++) {
+        if (i != widget.designatedActionIndex) {
+          final double normalWidth = widget.panelWidth *
+              ((widget.actions[i].flex > 0 ? widget.actions[i].flex : 1) /
+                  totalFlex);
+          widths[i] = normalWidth * (1.0 - widget.fullSwipeRatio);
+          nonDesignatedSum += widths[i];
+        }
+      }
+      widths[widget.designatedActionIndex!] =
+          widget.panelWidth - nonDesignatedSum;
+
+      return Row(
+        children: [
+          for (int i = 0; i < widget.actions.length; i++)
+            SizedBox(
+              width: widths[i],
+              child: ClipRect(
+                child: Opacity(
+                  opacity: i == widget.designatedActionIndex
+                      ? 1.0
+                      : (1.0 - widget.fullSwipeRatio),
+                  child: GestureDetector(
+                    onTap: () => _handleButtonTap(i),
+                    child: ColoredBox(
+                      color: widget.actions[i].backgroundColor,
+                      child: _buildButtonContent(
+                        widget.actions[i],
+                        scale: i == widget.designatedActionIndex
+                            ? (1.0 + (0.2 * widget.fullSwipeRatio))
+                            : (1.0 - widget.fullSwipeRatio),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      );
+    }
+
     return Row(
       children: [
         for (int i = 0; i < widget.actions.length; i++)
@@ -107,11 +161,13 @@ class _SwipeActionPanelState extends State<SwipeActionPanel> {
     );
   }
 
-  Widget _buildButtonContent(SwipeAction action) {
+  Widget _buildButtonContent(SwipeAction action, {double scale = 1.0}) {
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
+      child: Transform.scale(
+        scale: scale,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
           ColorFiltered(
             colorFilter: ColorFilter.mode(
               action.foregroundColor,
@@ -133,6 +189,7 @@ class _SwipeActionPanelState extends State<SwipeActionPanel> {
           ],
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }
