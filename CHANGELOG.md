@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.1.1] - 2026-03-06
+
+### Fixed
+- Fixed full-swipe expand animation starting too early: all reveal-panel actions now begin at equal width and only expand after the user swipes past the fully-revealed panel.
+- Added division-by-zero guard in full-swipe ratio calculation.
+
 ## [1.1.0] - 2026-03-06
 
 ### Added
