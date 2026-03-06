@@ -31,6 +31,61 @@ class _FullSwipeDemoState extends State<FullSwipeDemo> {
       padding: const EdgeInsets.all(16),
       children: [
         _buildHeader('Intentional Full-Swipe (Left)'),
+        _buildItem(
+          title: 'Full-swipe to Delete',
+          subtitle: 'iOS Mail style: drag far left to delete immediately.',
+          leftConfig: LeftSwipeConfig(
+            mode: LeftSwipeMode.reveal,
+            actions: [
+              SwipeAction(
+                icon: const Icon(Icons.delete, color: Colors.white),
+                label: 'Delete',
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                onTap: () => _showTriggered('Delete'),
+              ),
+            ],
+            fullSwipeConfig: FullSwipeConfig(
+              enabled: true,
+              threshold: 0.7,
+              action: SwipeAction(
+                icon: const Icon(Icons.delete, color: Colors.white),
+                label: 'Delete',
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                onTap: () => _showTriggered('Delete (Full)'),
+              ),
+            ),
+          ),
+        ),
+        _buildItem(
+          title: 'Full-swipe to Archive',
+          subtitle: 'Different color and action on full drag.',
+          leftConfig: LeftSwipeConfig(
+            mode: LeftSwipeMode.reveal,
+            actions: [
+              SwipeAction(
+                icon: const Icon(Icons.archive, color: Colors.white),
+                label: 'Archive',
+                backgroundColor: Colors.teal,
+                foregroundColor: Colors.white,
+                onTap: () => _showTriggered('Archive'),
+              ),
+            ],
+            fullSwipeConfig: FullSwipeConfig(
+              enabled: true,
+              threshold: 0.7,
+              action: SwipeAction(
+                icon: const Icon(Icons.archive, color: Colors.white),
+                label: 'Archive',
+                backgroundColor: Colors.teal,
+                foregroundColor: Colors.white,
+                onTap: () => _showTriggered('Archive (Full)'),
+              ),
+            ),
+          ),
+        ),
+
         _buildHeader('Multi-Action Expansion'),
         _buildItem(
           title: 'Three Actions (Last Expands)',
@@ -118,60 +173,7 @@ class _FullSwipeDemoState extends State<FullSwipeDemo> {
             ),
           ),
         ),
-        _buildItem(
-          title: 'Full-swipe to Delete',
-          subtitle: 'iOS Mail style: drag far left to delete immediately.',
-          leftConfig: LeftSwipeConfig(
-            mode: LeftSwipeMode.reveal,
-            actions: [
-              SwipeAction(
-                icon: const Icon(Icons.delete, color: Colors.white),
-                label: 'Delete',
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-                onTap: () => _showTriggered('Delete'),
-              ),
-            ],
-            fullSwipeConfig: FullSwipeConfig(
-              enabled: true,
-              threshold: 0.7,
-              action: SwipeAction(
-                icon: const Icon(Icons.delete, color: Colors.white),
-                label: 'Delete',
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-                onTap: () => _showTriggered('Delete (Full)'),
-              ),
-            ),
-          ),
-        ),
-        _buildItem(
-          title: 'Full-swipe to Archive',
-          subtitle: 'Different color and action on full drag.',
-          leftConfig: LeftSwipeConfig(
-            mode: LeftSwipeMode.reveal,
-            actions: [
-              SwipeAction(
-                icon: const Icon(Icons.archive, color: Colors.white),
-                label: 'Archive',
-                backgroundColor: Colors.teal,
-                foregroundColor: Colors.white,
-                onTap: () => _showTriggered('Archive'),
-              ),
-            ],
-            fullSwipeConfig: FullSwipeConfig(
-              enabled: true,
-              threshold: 0.7,
-              action: SwipeAction(
-                icon: const Icon(Icons.archive, color: Colors.white),
-                label: 'Archive',
-                backgroundColor: Colors.teal,
-                foregroundColor: Colors.white,
-                onTap: () => _showTriggered('Archive (Full)'),
-              ),
-            ),
-          ),
-        ),
+
         const SizedBox(height: 24),
         _buildHeader('Progressive Full-Swipe (Right)'),
         _buildItem(
@@ -290,7 +292,7 @@ class _FullSwipeDemoState extends State<FullSwipeDemo> {
             zones: [
               SwipeZone(
                 threshold: 0.3,
-                color: Colors.blue.withOpacity(0.5),
+                color: Colors.blue.withValues(alpha: 0.5),
                 semanticLabel: 'Zone 1',
                 onActivated: () => _showTriggered('Zone 1'),
               ),
@@ -337,6 +339,53 @@ class _FullSwipeDemoState extends State<FullSwipeDemo> {
                 onTap: _noOp, // Required parameter
               ),
             ],
+          ),
+        ),
+
+        _buildHeader('Manual Regression Tests'),
+        _buildItem(
+          title: 'Identity Mismatch Test (3 Actions)',
+          subtitle: 'Uses a new SwipeAction object in config. Verify expansion still works.',
+          leftConfig: LeftSwipeConfig(
+            mode: LeftSwipeMode.reveal,
+            actionPanelWidth: 240,
+            actions: [
+              SwipeAction(
+                icon: const Icon(Icons.archive),
+                label: 'Archive',
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
+                onTap: () => _showTriggered('Archive'),
+              ),
+              SwipeAction(
+                icon: const Icon(Icons.flag),
+                label: 'Flag',
+                backgroundColor: Colors.orange,
+                foregroundColor: Colors.white,
+                onTap: () => _showTriggered('Flag'),
+              ),
+              SwipeAction(
+                icon: const Icon(Icons.delete),
+                label: 'Delete',
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                onTap: () => _showTriggered('Delete'),
+              ),
+            ],
+            fullSwipeConfig: FullSwipeConfig(
+              enabled: true,
+              threshold: 0.8,
+              // CRITICAL: This is a NEW object, not the one from the list above.
+              // The fix ensures we find the index by property matching.
+              action: SwipeAction(
+                icon: const Icon(Icons.delete),
+                label: 'Delete',
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                onTap: () => _showTriggered('Delete (Full)'),
+              ),
+              expandAnimation: true,
+            ),
           ),
         ),
       ],

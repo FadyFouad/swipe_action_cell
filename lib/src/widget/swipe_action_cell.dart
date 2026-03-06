@@ -1868,6 +1868,14 @@ class SwipeActionCellState extends State<SwipeActionCell>
       final index = actions.indexOf(fsCfg.action);
       if (index != -1) {
         designatedIndex = index;
+      } else {
+        for (int i = 0; i < actions.length; i++) {
+          if (actions[i].label == fsCfg.action.label &&
+              actions[i].backgroundColor == fsCfg.action.backgroundColor) {
+            designatedIndex = i;
+            break;
+          }
+        }
       }
     }
 

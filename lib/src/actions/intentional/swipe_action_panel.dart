@@ -105,9 +105,7 @@ class _SwipeActionPanelState extends State<SwipeActionPanel> {
 
       for (int i = 0; i < widget.actions.length; i++) {
         if (i != widget.designatedActionIndex) {
-          final double normalWidth = widget.panelWidth *
-              ((widget.actions[i].flex > 0 ? widget.actions[i].flex : 1) /
-                  totalFlex);
+          final double normalWidth = widget.panelWidth / widget.actions.length;
           widths[i] = normalWidth * (1.0 - widget.fullSwipeRatio);
           nonDesignatedSum += widths[i];
         }
