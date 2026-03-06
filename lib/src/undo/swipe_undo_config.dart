@@ -10,7 +10,7 @@ enum SwipeUndoOverlayPosition {
   bottom,
 }
 
-/// Visual and layout configuration for the built-in [SwipeUndoOverlay] bar.
+/// Visual and layout configuration for the built-in `SwipeUndoOverlay` bar.
 @immutable
 class SwipeUndoOverlayConfig {
   /// Whether the bar appears at the top or bottom of the cell.

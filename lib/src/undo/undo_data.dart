@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 
-/// Snapshot of an undo window's state, passed to [onUndoAvailable].
+/// Snapshot of an undo window's state, passed to `onUndoAvailable`.
 @immutable
 class UndoData {
   /// Progressive value before the action. null for intentional (left-swipe) actions.

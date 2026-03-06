@@ -3,7 +3,7 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [1.1.0] - 2026-03-02
+## [1.1.0] - 2026-03-06
 
 ### Added
 - Full Swipe Auto-Trigger: swipe a cell fully across the screen to instantly trigger a designated action without tapping
@@ -19,6 +19,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - RightSwipeConfig and LeftSwipeConfig now accept optional fullSwipeConfig parameter
 - SwipeFeedbackEvent enum extended with fullSwipeThreshold and fullSwipeActivation
 - SwipeProgress now includes fullSwipeRatio data
+
+### Fixed
+- Fixed visual tap flicker: Backgrounds in `SwipeVisualConfig` no longer flash briefly on simple taps and now fade in/out smoothly.
+- Fixed full-swipe expansion bug: When a full-swipe gesture is released early, actions smoothly restore to their original widths instead of remaining visually shrunk.
 
 ### Notes
 - Full swipe is disabled by default — zero overhead when not configured

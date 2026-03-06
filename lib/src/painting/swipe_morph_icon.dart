@@ -21,7 +21,7 @@ class SwipeMorphIcon extends StatelessWidget {
   /// The widget shown when progress is 1.0.
   final Widget endIcon;
 
-  /// The interpolation value, clamped internally to [0.0, 1.0].
+  /// The interpolation value, clamped internally to `[0.0, 1.0]`.
   final double progress;
 
   /// Optional size applied to both icons via [IconTheme].

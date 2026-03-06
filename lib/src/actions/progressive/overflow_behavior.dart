@@ -7,7 +7,7 @@ enum OverflowBehavior {
   /// [RightSwipeConfig.onMaxReached] fires on each clamped swipe.
   clamp,
 
-  /// Resets the value to [RightSwipeConfig.minValue] when [maxValue]
+  /// Resets the value to [RightSwipeConfig.minValue] when [RightSwipeConfig.maxValue]
   /// would be exceeded.
   ///
   /// [RightSwipeConfig.onMaxReached] fires before the value wraps.

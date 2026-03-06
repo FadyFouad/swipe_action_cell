@@ -34,7 +34,7 @@ import 'swipe_cell_handle.dart';
 /// ```
 ///
 /// **Lifecycle**: Create the controller before or after the widget mounts.
-/// Call [dispose] when done — typically in [State.dispose]:
+/// Call [dispose] when done — typically in `State.dispose`:
 ///
 /// ```dart
 /// @override
@@ -204,8 +204,8 @@ class SwipeController extends ChangeNotifier {
 
   /// Attaches a [SwipeCellHandle] from [SwipeActionCellState].
   ///
-  /// Called by [SwipeActionCellState] in [State.didChangeDependencies] /
-  /// [State.initState]. Asserts in debug mode if a handle is already attached
+  /// Called by [SwipeActionCellState] in `State.didChangeDependencies` /
+  /// `State.initState`. Asserts in debug mode if a handle is already attached
   /// (one controller ↔ one cell invariant).
   ///
   /// Not for consumer use — this method is part of the package-internal
@@ -221,7 +221,7 @@ class SwipeController extends ChangeNotifier {
 
   /// Detaches the current [SwipeCellHandle].
   ///
-  /// Called by [SwipeActionCellState] in [State.dispose].
+  /// Called by [SwipeActionCellState] in `State.dispose`.
   /// No-op if [handle] does not match the currently attached handle.
   ///
   /// Not for consumer use.
