@@ -1792,7 +1792,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
     _snapBack(_controller.value, 0.0);
   }
 
-  Widget _buildBackground(BuildContext context, SwipeProgress progress) {
+  Widget _buildBackground(BuildContext context, SwipeProgress progress) { if (progress.ratio <= 0.0 || progress.direction == SwipeDirection.none) return const SizedBox.shrink();
     if (!effectiveGestureConfig.enabledDirections
         .contains(progress.direction)) {
       return const SizedBox.shrink();
@@ -1808,11 +1808,11 @@ class SwipeActionCellState extends State<SwipeActionCell>
       final transitionStyle = isForward
           ? _resolvedForwardConfig?.zoneTransitionStyle
           : _resolvedBackwardConfig?.zoneTransitionStyle;
-      return ZoneAwareBackground(
+      return Opacity(opacity: progress.ratio.clamp(0.0, 1.0), child: ZoneAwareBackground(
         zones: zones,
         progress: progress,
         transitionStyle: transitionStyle ?? ZoneTransitionStyle.instant,
-      );
+      ));
     }
     final builder = isForward
         ? effectiveVisualConfig.rightBackground
@@ -1820,7 +1820,7 @@ class SwipeActionCellState extends State<SwipeActionCell>
     if (builder == null) {
       return const SizedBox.shrink();
     }
-    return builder(context, progress);
+    return Opacity(opacity: progress.ratio.clamp(0.0, 1.0), child: builder(context, progress));
   }
 
   Widget _buildProgressIndicator() {
