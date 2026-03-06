@@ -1,3 +1,5 @@
+import '../core/swipe_direction.dart';
+
 /// Package-internal contract between [SwipeController] and [SwipeActionCellState].
 ///
 /// [SwipeActionCellState] implements this interface and registers itself via
@@ -29,4 +31,12 @@ abstract class SwipeCellHandle {
 
   /// Force-commits the pending undo immediately, as if the timer expired.
   void executeCommitUndo();
+
+  /// Programmatically triggers the full-swipe action for [direction],
+  /// exactly as if the user had dragged past the full-swipe threshold and
+  /// released.
+  ///
+  /// No-op when no [FullSwipeConfig] is configured for [direction] or when
+  /// [FullSwipeConfig.enabled] is false.
+  void executeFullSwipe(SwipeDirection direction);
 }
