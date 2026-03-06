@@ -88,11 +88,47 @@ class _FullSwipeDemoState extends State<FullSwipeDemo> {
 
         _buildHeader('Multi-Action Expansion'),
         _buildItem(
-          title: 'Three Actions (Last Expands)',
-          subtitle: 'Archive and Flag shrink/fade while Delete expands.',
+          title: 'Two Actions (Last Expands)',
+          subtitle: 'Flag shrinks while Delete expands.',
           leftConfig: LeftSwipeConfig(
             mode: LeftSwipeMode.reveal,
-            actionPanelWidth: 240,
+            actionPanelWidth: 160,
+            actions: [
+              SwipeAction(
+                icon: const Icon(Icons.flag),
+                label: 'Flag',
+                backgroundColor: Colors.orange,
+                foregroundColor: Colors.white,
+                onTap: () => _showTriggered('Flag'),
+              ),
+              SwipeAction(
+                icon: const Icon(Icons.delete),
+                label: 'Delete',
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                onTap: () => _showTriggered('Delete'),
+              ),
+            ],
+            fullSwipeConfig: FullSwipeConfig(
+              enabled: true,
+              threshold: 0.8,
+              action: SwipeAction(
+                icon: const Icon(Icons.delete),
+                label: 'Delete',
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                onTap: () => _showTriggered('Delete (Full)'),
+              ),
+              expandAnimation: true,
+            ),
+          ),
+        ),
+        _buildItem(
+          title: 'Three Actions',
+          subtitle: 'All actions remain equal size during full swipe.',
+          leftConfig: LeftSwipeConfig(
+            mode: LeftSwipeMode.reveal,
+            actionPanelWidth: 160,
             actions: [
               SwipeAction(
                 icon: const Icon(Icons.archive),
@@ -135,7 +171,7 @@ class _FullSwipeDemoState extends State<FullSwipeDemo> {
           subtitle: 'Archive and Delete shrink while Flag expands.',
           leftConfig: LeftSwipeConfig(
             mode: LeftSwipeMode.reveal,
-            actionPanelWidth: 240,
+            actionPanelWidth: 200,
             actions: [
               SwipeAction(
                 icon: const Icon(Icons.archive),

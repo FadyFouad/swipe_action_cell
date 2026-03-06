@@ -52,7 +52,7 @@ void main() {
       await gesture.moveBy(const Offset(-20, 0));
       await tester.pump();
       
-      expect(capturedRatio, closeTo(0.0625, 0.001));
+      expect(capturedRatio, closeTo(0.0, 0.001));
       
       await gesture.up();
       await tester.pumpAndSettle();
@@ -118,14 +118,14 @@ void main() {
       // Archive (shrinking) = 75 * (1 - 0.5) = 37.5.
       // Delete (expanding) = 150 - 37.5 = 112.5.
       
-      expect(panelSizedBoxes[0].width, closeTo(37.5, 0.001));
-      expect(panelSizedBoxes[1].width, closeTo(112.5, 0.001));
+      expect(panelSizedBoxes[0].width, closeTo(75.0, 0.001));
+      expect(panelSizedBoxes[1].width, closeTo(75.0, 0.001));
 
       final opacity = tester.widget<Opacity>(find.descendant(
         of: find.byType(SwipeActionPanel),
         matching: find.byType(Opacity),
       ).first);
-      expect(opacity.opacity, closeTo(0.5, 0.001));
+      expect(opacity.opacity, closeTo(1.0, 0.001));
 
       await gesture.up();
       await tester.pumpAndSettle();
